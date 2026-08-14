@@ -10,7 +10,9 @@ syncInjectedDepsAfterScripts:
 
 allowBuilds:
   argon2: true
+  cpu-features: true
   esbuild: true
+  ssh2: true
   unrs-resolver: true
 
 catalog:

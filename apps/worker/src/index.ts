@@ -1,5 +1,8 @@
 import "dotenv/config";
-import { resolve } from "node:path";
+import { createHmac } from "node:crypto";
+import { lookup } from "node:dns/promises";
+import { mkdir, writeFile } from "node:fs/promises";
+import { basename, resolve } from "node:path";
 import { Octokit } from "@octokit/rest";
 import { buildRepositoryBrain, planRepositoryObjective } from "@origin/ai";
 import { decryptSecret, requiredEnv } from "@origin/core";
@@ -8,17 +11,29 @@ import {
   agentRuns,
   closeDb,
   getDb,
+  issueComments,
+  issueLabels,
   issues,
   jobs,
+  labels,
+  milestones,
+  pullRequestComments,
+  pullRequestReviews,
   pullRequests,
+  releaseAssets,
+  releases,
   repositories,
   repositoryMemories,
+  webhookDeliveries,
+  webhooks,
+  wikiImports,
 } from "@origin/db";
 import { getDefaultBranch, listTree, mirrorRepository, readReadme, readTextFile } from "@origin/git";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 type ClaimedJob = { id: string; type: string; payload: Record<string, unknown>; attempts: number };
 const repositoryRoot = resolve(process.env.ORIGIN_REPOSITORY_ROOT ?? "../../data/repositories");
+const assetRoot = resolve(process.env.ORIGIN_ASSET_ROOT ?? "../../data/assets");
 let stopping = false;
 
 async function claimJob(): Promise<ClaimedJob | null> {
@@ -76,6 +91,8 @@ async function importGitHub(job: ClaimedJob) {
   const warnings: string[] = [];
   let issueCount = 0;
   let pullRequestCount = 0;
+  let commentCount = 0;
+  let releaseCount = 0;
   try {
     console.log(`Import ${job.id}: reading repository metadata`);
     const metadata = await octokit.repos.get({ owner: source.owner, repo: source.repository });
@@ -101,7 +118,21 @@ async function importGitHub(job: ClaimedJob) {
       per_page: 100,
     });
     for (const issue of importedIssues.filter((item) => !item.pull_request)) {
-      await getDb().insert(issues).values({
+      let milestoneId: string | null = null;
+      if (issue.milestone) {
+        const [milestone] = await getDb().insert(milestones).values({
+          repositoryId,
+          number: issue.milestone.number,
+          title: issue.milestone.title,
+          description: issue.milestone.description ?? "",
+          status: issue.milestone.state,
+          dueAt: issue.milestone.due_on ? new Date(issue.milestone.due_on) : null,
+          closedAt: issue.milestone.closed_at ? new Date(issue.milestone.closed_at) : null,
+        }).onConflictDoUpdate({ target: [milestones.repositoryId, milestones.number], set: { title: issue.milestone.title, description: issue.milestone.description ?? "", status: issue.milestone.state, dueAt: issue.milestone.due_on ? new Date(issue.milestone.due_on) : null, closedAt: issue.milestone.closed_at ? new Date(issue.milestone.closed_at) : null } }).returning();
+        milestoneId = milestone!.id;
+      }
+      const legacyLabels = issue.labels.map((label) => typeof label === "string" ? label : label.name ?? "").filter(Boolean);
+      const [localIssue] = await getDb().insert(issues).values({
         repositoryId,
         number: issue.number,
         title: issue.title,
@@ -109,17 +140,46 @@ async function importGitHub(job: ClaimedJob) {
         status: issue.state,
         authorName: issue.user?.login ?? "unknown",
         authorAvatarUrl: issue.user?.avatar_url,
-        labels: issue.labels.map((label) => typeof label === "string" ? label : label.name ?? "").filter(Boolean),
+        labels: legacyLabels,
+        milestoneId,
         externalId: String(issue.id),
         externalUrl: issue.html_url,
         createdAt: new Date(issue.created_at),
         updatedAt: new Date(issue.updated_at),
         closedAt: issue.closed_at ? new Date(issue.closed_at) : null,
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({ target: [issues.repositoryId, issues.number], set: { title: issue.title, body: issue.body ?? "", status: issue.state, labels: legacyLabels, milestoneId, updatedAt: new Date(issue.updated_at), closedAt: issue.closed_at ? new Date(issue.closed_at) : null } }).returning();
+      for (const rawLabel of issue.labels) {
+        const name = typeof rawLabel === "string" ? rawLabel : rawLabel.name ?? "";
+        if (!name) continue;
+        const color = typeof rawLabel === "string" ? "6e7781" : rawLabel.color ?? "6e7781";
+        const description = typeof rawLabel === "string" ? "" : rawLabel.description ?? "";
+        const [localLabel] = await getDb().insert(labels).values({ repositoryId, name, color, description }).onConflictDoUpdate({ target: [labels.repositoryId, labels.name], set: { color, description } }).returning();
+        await getDb().insert(issueLabels).values({ issueId: localIssue!.id, labelId: localLabel!.id }).onConflictDoNothing();
+      }
       issueCount += 1;
     }
+
+    const importedComments = await octokit.paginate(octokit.issues.listCommentsForRepo, { owner: source.owner, repo: source.repository, per_page: 100 });
+    const localIssues = await getDb().select({ id: issues.id, number: issues.number }).from(issues).where(eq(issues.repositoryId, repositoryId));
+    const issueIds = new Map(localIssues.map((item) => [item.number, item.id]));
+    for (const comment of importedComments) {
+      const number = Number(comment.issue_url.split("/").pop());
+      const issueId = issueIds.get(number);
+      if (!issueId) continue;
+      await getDb().insert(issueComments).values({
+        issueId,
+        authorName: comment.user?.login ?? "unknown",
+        authorAvatarUrl: comment.user?.avatar_url,
+        body: comment.body ?? "",
+        externalId: String(comment.id),
+        externalUrl: comment.html_url,
+        createdAt: new Date(comment.created_at),
+        updatedAt: new Date(comment.updated_at),
+      }).onConflictDoNothing();
+      commentCount += 1;
+    }
   } catch {
-    warnings.push("GitHub issues were rate-limited; retry with a token to move them");
+    warnings.push("GitHub issues or comments were rate-limited; retry with a token to move them");
   }
 
   try {
@@ -131,7 +191,7 @@ async function importGitHub(job: ClaimedJob) {
       per_page: 100,
     });
     for (const pull of importedPulls) {
-      await getDb().insert(pullRequests).values({
+      const [localPull] = await getDb().insert(pullRequests).values({
         repositoryId,
         number: pull.number,
         title: pull.title,
@@ -140,16 +200,84 @@ async function importGitHub(job: ClaimedJob) {
         authorName: pull.user?.login ?? "unknown",
         headBranch: pull.head.ref,
         baseBranch: pull.base.ref,
+        headSha: pull.head.sha,
+        baseSha: pull.base.sha,
         externalId: String(pull.id),
         externalUrl: pull.html_url,
         createdAt: new Date(pull.created_at),
         updatedAt: new Date(pull.updated_at),
         mergedAt: pull.merged_at ? new Date(pull.merged_at) : null,
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({ target: [pullRequests.repositoryId, pullRequests.number], set: { title: pull.title, body: pull.body ?? "", status: pull.merged_at ? "merged" : pull.state, updatedAt: new Date(pull.updated_at) } }).returning();
+      const [reviewComments, reviews] = await Promise.all([
+        octokit.paginate(octokit.pulls.listReviewComments, { owner: source.owner, repo: source.repository, pull_number: pull.number, per_page: 100 }),
+        octokit.paginate(octokit.pulls.listReviews, { owner: source.owner, repo: source.repository, pull_number: pull.number, per_page: 100 }),
+      ]);
+      for (const comment of reviewComments) {
+        await getDb().insert(pullRequestComments).values({ pullRequestId: localPull!.id, authorName: comment.user?.login ?? "unknown", body: comment.body, path: comment.path, line: comment.line ?? comment.original_line, side: comment.side?.toLowerCase(), externalId: String(comment.id), externalUrl: comment.html_url, createdAt: new Date(comment.created_at), updatedAt: new Date(comment.updated_at) }).onConflictDoNothing();
+        commentCount += 1;
+      }
+      for (const review of reviews) {
+        await getDb().insert(pullRequestReviews).values({ pullRequestId: localPull!.id, reviewerName: review.user?.login ?? "unknown", state: review.state.toLowerCase(), body: review.body ?? "", commitSha: review.commit_id, externalId: String(review.id), submittedAt: review.submitted_at ? new Date(review.submitted_at) : new Date() }).onConflictDoNothing();
+      }
       pullRequestCount += 1;
     }
   } catch {
     warnings.push("GitHub pull requests were rate-limited; retry with a token to move them");
+  }
+
+  try {
+    console.log(`Import ${job.id}: moving releases and assets`);
+    const importedReleases = await octokit.paginate(octokit.repos.listReleases, { owner: source.owner, repo: source.repository, per_page: 100 });
+    for (const release of importedReleases) {
+      const [localRelease] = await getDb().insert(releases).values({
+        repositoryId,
+        tagName: release.tag_name,
+        name: release.name || release.tag_name,
+        body: release.body ?? "",
+        authorName: release.author?.login ?? "unknown",
+        draft: release.draft,
+        prerelease: release.prerelease,
+        externalId: String(release.id),
+        externalUrl: release.html_url,
+        publishedAt: release.published_at ? new Date(release.published_at) : null,
+        createdAt: new Date(release.created_at),
+        updatedAt: new Date(release.created_at),
+      }).onConflictDoUpdate({ target: [releases.repositoryId, releases.tagName], set: { name: release.name || release.tag_name, body: release.body ?? "", draft: release.draft, prerelease: release.prerelease } }).returning();
+      for (const asset of release.assets) {
+        let storagePath: string | null = null;
+        if (asset.size <= 100 * 1024 * 1024) {
+          try {
+            const safeName = basename(asset.name);
+            const directory = resolve(assetRoot, repositoryId, release.tag_name.replace(/[^A-Za-z0-9._-]/g, "_"));
+            await mkdir(directory, { recursive: true });
+            const response = await fetch(asset.url, { headers: { Accept: "application/octet-stream", ...(token ? { Authorization: `Bearer ${token}` } : {}), "User-Agent": "Origin-Importer" } });
+            if (response.ok) {
+              const data = Buffer.from(await response.arrayBuffer());
+              if (data.length <= 100 * 1024 * 1024) {
+                storagePath = resolve(directory, safeName);
+                await writeFile(storagePath, data, { mode: 0o640 });
+              }
+            }
+          } catch {
+            warnings.push(`Asset ${asset.name} could not be copied`);
+          }
+        } else warnings.push(`Asset ${asset.name} exceeds the 100 MB import limit`);
+        await getDb().insert(releaseAssets).values({ releaseId: localRelease!.id, name: asset.name, contentType: asset.content_type, size: asset.size, downloadUrl: asset.browser_download_url, storagePath, externalId: String(asset.id), downloadCount: asset.download_count, createdAt: new Date(asset.created_at) }).onConflictDoNothing();
+      }
+      releaseCount += 1;
+    }
+  } catch {
+    warnings.push("GitHub releases or assets were rate-limited; retry with a token to move them");
+  }
+
+  try {
+    console.log(`Import ${job.id}: mirroring wiki history`);
+    const wikiStorageKey = repository.storageKey.replace(/\.git$/, ".wiki.git");
+    const wikiSourceUrl = `https://github.com/${source.owner}/${source.repository}.wiki.git`;
+    await mirrorRepository(wikiSourceUrl, repositoryRoot, wikiStorageKey, token);
+    await getDb().insert(wikiImports).values({ repositoryId, storageKey: wikiStorageKey, sourceUrl: wikiSourceUrl }).onConflictDoUpdate({ target: wikiImports.repositoryId, set: { status: "ready", updatedAt: new Date() } });
+  } catch {
+    warnings.push("No GitHub wiki was available to move");
   }
 
   await getDb().insert(activityEvents).values({
@@ -160,12 +288,55 @@ async function importGitHub(job: ClaimedJob) {
     title: `Imported ${source.owner}/${source.repository}`,
     detail: warnings.length
       ? `Git history moved. ${warnings.join(". ")}.`
-      : `${issueCount} issues and ${pullRequestCount} pull requests moved with the Git history.`,
+      : `${issueCount} issues, ${pullRequestCount} pull requests, ${commentCount} comments, and ${releaseCount} releases moved with the Git history.`,
     metadata: { warnings },
   });
   await getDb().insert(jobs).values({ type: "analyze-repository", payload: { repositoryId } });
   console.log(`Import ${job.id}: completed with ${warnings.length} warning(s)`);
-  return { repositoryId, issues: issueCount, pullRequests: pullRequestCount, warnings };
+  return { repositoryId, issues: issueCount, pullRequests: pullRequestCount, comments: commentCount, releases: releaseCount, warnings };
+}
+
+function isPrivateAddress(address: string) {
+  const normalized = address.replace(/^::ffff:/, "");
+  if (normalized === "::1" || normalized === "0.0.0.0" || normalized.startsWith("fc") || normalized.startsWith("fd") || normalized.startsWith("fe80:")) return true;
+  const octets = normalized.split(".").map(Number);
+  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part))) return false;
+  return octets[0] === 10 || octets[0] === 127 || octets[0] === 0 || (octets[0] === 169 && octets[1] === 254) || (octets[0] === 172 && (octets[1] ?? 0) >= 16 && (octets[1] ?? 0) <= 31) || (octets[0] === 192 && octets[1] === 168);
+}
+
+async function assertPublicWebhookUrl(rawUrl: string) {
+  const url = new URL(rawUrl);
+  if (!new Set(["http:", "https:"]).has(url.protocol) || url.username || url.password) throw new Error("Webhook target is invalid");
+  const addresses = await lookup(url.hostname, { all: true });
+  if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) throw new Error("Webhook targets may not resolve to private networks");
+  return url;
+}
+
+async function deliverWebhookEvent(job: ClaimedJob) {
+  const repositoryId = String(job.payload.repositoryId);
+  const event = String(job.payload.event);
+  const payload = (job.payload.payload ?? {}) as Record<string, unknown>;
+  const hooks = await getDb().select().from(webhooks).where(and(eq(webhooks.repositoryId, repositoryId), eq(webhooks.active, true)));
+  let delivered = 0;
+  for (const hook of hooks.filter((item) => item.events.includes(event) || item.events.includes("*"))) {
+    const [delivery] = await getDb().insert(webhookDeliveries).values({ webhookId: hook.id, event, payload }).returning();
+    try {
+      const url = await assertPublicWebhookUrl(hook.url);
+      const body = JSON.stringify({ event, repositoryId, deliveryId: delivery!.id, ...payload });
+      const secret = await decryptSecret(hook.secretEncrypted, requiredEnv("ORIGIN_ENCRYPTION_KEY"));
+      const signature = `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
+      const response = await fetch(url, { method: "POST", redirect: "error", signal: AbortSignal.timeout(10_000), headers: { "Content-Type": "application/json", "User-Agent": "Origin-Hookshot/1", "X-Origin-Event": event, "X-Origin-Delivery": delivery!.id, "X-Origin-Signature-256": signature }, body });
+      const responseBody = (await response.text()).slice(0, 2_000);
+      await getDb().update(webhookDeliveries).set({ status: response.ok ? "delivered" : "failed", responseCode: response.status, responseBody, attempts: 1, deliveredAt: new Date(), updatedAt: new Date() }).where(eq(webhookDeliveries.id, delivery!.id));
+      await getDb().update(webhooks).set({ lastDeliveryAt: new Date(), updatedAt: new Date() }).where(eq(webhooks.id, hook.id));
+      if (!response.ok) throw new Error(`Webhook returned ${response.status}`);
+      delivered += 1;
+    } catch (error) {
+      await getDb().update(webhookDeliveries).set({ status: "failed", responseBody: safeError(error), attempts: 1, updatedAt: new Date() }).where(eq(webhookDeliveries.id, delivery!.id));
+      await getDb().update(webhooks).set({ lastDeliveryAt: new Date(), updatedAt: new Date() }).where(eq(webhooks.id, hook.id));
+    }
+  }
+  return { delivered, matched: hooks.length };
 }
 
 async function analyzeRepository(job: ClaimedJob) {
@@ -237,6 +408,7 @@ async function perform(job: ClaimedJob) {
   if (job.type === "import-github") return importGitHub(job);
   if (job.type === "analyze-repository") return analyzeRepository(job);
   if (job.type === "plan-agent-run") return planAgentRun(job);
+  if (job.type === "deliver-webhook-event") return deliverWebhookEvent(job);
   throw new Error(`Unsupported job type: ${job.type}`);
 }
 

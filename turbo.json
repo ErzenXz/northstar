@@ -8,6 +8,11 @@
         "DATABASE_URL",
         "ORIGIN_BASE_URL",
         "ORIGIN_GIT_URL",
+        "ORIGIN_SSH_URL",
+        "ORIGIN_REPOSITORY_ROOT",
+        "ORIGIN_ASSET_ROOT",
+        "ORIGIN_SSH_HOST_KEY",
+        "ORIGIN_ENCRYPTION_KEY",
         "ORIGIN_EDITION",
         "AI_GATEWAY_API_KEY",
         "AI_MODEL"

@@ -1,0 +1,1 @@
+ALTER TABLE "pull_request_reviews" ADD COLUMN "commit_sha" text;

@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq, gt } from "drizzle-orm";
-import { getDb, sessions, users } from "@origin/db";
+import { accessTokens, getDb, sessions, users } from "@origin/db";
 
 const SESSION_COOKIE = "origin_session";
 const SESSION_DAYS = 30;
@@ -49,4 +49,16 @@ export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   return user;
+}
+
+export async function getAccessTokenUser(request: Request) {
+  const authorization = request.headers.get("authorization");
+  if (!authorization?.startsWith("Bearer ")) return null;
+  const token = authorization.slice(7).trim();
+  if (!token.startsWith("org_")) return null;
+  const tokenHash = hashToken(token);
+  const [row] = await getDb().select({ tokenId: accessTokens.id, expiresAt: accessTokens.expiresAt, id: users.id, name: users.name, username: users.username, email: users.email }).from(accessTokens).innerJoin(users, eq(users.id, accessTokens.userId)).where(eq(accessTokens.tokenHash, tokenHash)).limit(1);
+  if (!row || (row.expiresAt && row.expiresAt < new Date())) return null;
+  await getDb().update(accessTokens).set({ lastUsedAt: new Date() }).where(eq(accessTokens.id, row.tokenId));
+  return row;
 }

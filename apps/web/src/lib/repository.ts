@@ -7,3 +7,8 @@ export function gitCloneUrl(owner: string, repository: string) {
   const base = process.env.ORIGIN_GIT_URL ?? "http://localhost:4000";
   return `${base.replace(/\/$/, "")}/${owner}/${repository}.git`;
 }
+
+export function sshCloneUrl(owner: string, repository: string) {
+  const base = process.env.ORIGIN_SSH_URL ?? "ssh://git@localhost:2222";
+  return `${base.replace(/\/$/, "")}/${owner}/${repository}.git`;
+}

@@ -4,7 +4,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { join, resolve } from "node:path";
 import Fastify from "fastify";
 import { and, eq } from "drizzle-orm";
-import { accessTokens, activityEvents, getDb, organizationMembers, organizations, repositories, users } from "@origin/db";
+import { accessTokens, activityEvents, getDb, jobs, organizationMembers, organizations, repositories, users } from "@origin/db";
 import { resolveRepositoryPath } from "@origin/git";
 
 const app = Fastify({ logger: true, bodyLimit: 250 * 1024 * 1024 });
@@ -140,6 +140,7 @@ app.all("/*", async (request, reply) => {
           title: `Pushed to ${repositorySlug}`,
           detail: "Git refs were updated through smart HTTP.",
         }),
+        getDb().insert(jobs).values({ type: "deliver-webhook-event", payload: { repositoryId: repository.id, event: "push", payload: { actor: access.actorName, repository: repositorySlug } } }),
       ]).catch((error) => request.log.error(error, "unable to record Git push activity"));
     }
   });

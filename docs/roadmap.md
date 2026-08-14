@@ -11,11 +11,11 @@
 
 ## Alpha 2 — own the merge decision
 
-- [ ] Native branches, diffs, comments, approvals, and merge operations
-- [ ] Issue comments, assignees, milestones, and native labels
-- [ ] GitHub comment, release, wiki, and asset migration
-- [ ] Webhooks, commit statuses, and a runner protocol
-- [ ] SSH transport and deploy keys
+- [x] Native branches, diffs, comments, approvals, and merge operations
+- [x] Issue comments, assignees, milestones, and native labels
+- [x] GitHub comment, release, wiki, and asset migration
+- [x] Webhooks, commit statuses, and a runner protocol
+- [x] SSH transport and deploy keys
 
 ## Alpha 3 — verified agent work
 

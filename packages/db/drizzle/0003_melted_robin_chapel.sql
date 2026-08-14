@@ -1,0 +1,3 @@
+CREATE UNIQUE INDEX "issue_comment_external_unique" ON "issue_comments" USING btree ("issue_id","external_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "pull_comment_external_unique" ON "pull_request_comments" USING btree ("pull_request_id","external_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "pull_review_external_unique" ON "pull_request_reviews" USING btree ("pull_request_id","external_id");

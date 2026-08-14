@@ -3,8 +3,10 @@ name: origin
 x-origin-env: &origin-env
   DATABASE_URL: postgresql://origin:origin@postgres:5432/origin
   ORIGIN_REPOSITORY_ROOT: /var/lib/origin/repositories
+  ORIGIN_ASSET_ROOT: /var/lib/origin/assets
   ORIGIN_BASE_URL: http://localhost:3000
   ORIGIN_GIT_URL: http://localhost:4000
+  ORIGIN_SSH_URL: ssh://git@localhost:2222
   ORIGIN_EDITION: community
   ORIGIN_ENCRYPTION_KEY: ${ORIGIN_ENCRYPTION_KEY:-local-encryption-key-change-before-public-use}
   SESSION_SECRET: ${SESSION_SECRET:-local-session-secret-change-before-public-use}
@@ -66,6 +68,24 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  ssh:
+    build:
+      context: .
+      target: ssh
+    environment:
+      <<: *origin-env
+      ORIGIN_SSH_HOST: 0.0.0.0
+      ORIGIN_SSH_PORT: 2222
+      ORIGIN_SSH_HOST_KEY: /var/lib/origin/ssh/host-key.pem
+    ports:
+      - "2222:2222"
+    volumes:
+      - origin-repositories:/var/lib/origin/repositories
+      - origin-ssh:/var/lib/origin/ssh
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   worker:
     build:
       context: .
@@ -73,6 +93,7 @@ services:
     environment: *origin-env
     volumes:
       - origin-repositories:/var/lib/origin/repositories
+      - origin-assets:/var/lib/origin/assets
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -92,3 +113,5 @@ services:
 volumes:
   origin-postgres:
   origin-repositories:
+  origin-assets:
+  origin-ssh:
