@@ -1,0 +1,43 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Production deploys need real copies of internal packages. Symlinks would
+# otherwise point back into the build workspace after the image is assembled.
+injectWorkspacePackages: true
+syncInjectedDepsAfterScripts:
+  - build
+
+allowBuilds:
+  argon2: true
+  esbuild: true
+  unrs-resolver: true
+
+catalog:
+  "@types/node": 24.3.0
+  "drizzle-orm": 0.45.2
+  "typescript": 5.9.3
+  "vitest": 3.2.4
+
+minimumReleaseAgeExclude:
+  - '@ai-sdk/gateway@4.0.52'
+  - '@turbo/darwin-64@2.10.10'
+  - '@turbo/darwin-arm64@2.10.10'
+  - '@turbo/linux-64@2.10.10'
+  - '@turbo/linux-arm64@2.10.10'
+  - '@turbo/windows-64@2.10.10'
+  - '@turbo/windows-arm64@2.10.10'
+  - ai@7.0.65
+  - turbo@2.10.10
+  - '@next/env@16.3.1'
+  - '@next/eslint-plugin-next@16.3.1'
+  - '@next/swc-darwin-arm64@16.3.1'
+  - '@next/swc-darwin-x64@16.3.1'
+  - '@next/swc-linux-arm64-gnu@16.3.1'
+  - '@next/swc-linux-arm64-musl@16.3.1'
+  - '@next/swc-linux-x64-gnu@16.3.1'
+  - '@next/swc-linux-x64-musl@16.3.1'
+  - '@next/swc-win32-arm64-msvc@16.3.1'
+  - '@next/swc-win32-x64-msvc@16.3.1'
+  - eslint-config-next@16.3.1
+  - next@16.3.1

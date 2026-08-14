@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "!.next/dev/**"],
+      "env": [
+        "DATABASE_URL",
+        "ORIGIN_BASE_URL",
+        "ORIGIN_GIT_URL",
+        "ORIGIN_EDITION",
+        "AI_GATEWAY_API_KEY",
+        "AI_MODEL"
+      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"]
+    },
+    "check": {
+      "dependsOn": ["transit"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    }
+  }
+}

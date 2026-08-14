@@ -1,0 +1,15 @@
+node_modules
+.turbo
+.next
+dist
+coverage
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+repositories
+data
+apps/*/.env
+packages/*/.env
+!.env.example

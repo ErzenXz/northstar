@@ -1,0 +1,35 @@
+{
+  "name": "@origin/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "check": "tsc --noEmit",
+    "dev": "next dev --turbopack",
+    "lint": "eslint .",
+    "start": "next start",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@origin/core": "workspace:*",
+    "@origin/db": "workspace:*",
+    "@origin/git": "workspace:*",
+    "argon2": "0.44.0",
+    "drizzle-orm": "catalog:",
+    "lucide-react": "0.542.0",
+    "next": "16.3.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "eslint": "9.34.0",
+    "eslint-config-next": "16.3.1",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
