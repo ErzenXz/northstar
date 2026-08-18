@@ -1,9 +1,12 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   activityEvents,
+  agentReviews,
   agentRuns,
+  evidenceArtifacts,
   getDb,
+  incidents,
   issueAssignees,
   issueComments,
   issueLabels,
@@ -11,7 +14,9 @@ import {
   labels,
   milestones,
   organizationMembers,
+  organizationSettings,
   organizations,
+  policyGates,
   pullRequestComments,
   pullRequestReviews,
   pullRequests,
@@ -19,6 +24,7 @@ import {
   releases,
   repositories,
   repositoryMemories,
+  usageRecords,
   users,
 } from "@origin/db";
 import { getCurrentUser } from "./auth";
@@ -87,6 +93,20 @@ export async function getRepositoryIssues(repositoryId: string) {
   return getDb().select().from(issues).where(eq(issues.repositoryId, repositoryId)).orderBy(desc(issues.updatedAt));
 }
 
+export async function getRepositoryMilestones(repositoryId: string) {
+  const [rows, issueRows] = await Promise.all([
+    getDb().select().from(milestones).where(eq(milestones.repositoryId, repositoryId)).orderBy(milestones.number),
+    getDb().select({ milestoneId: issues.milestoneId, status: issues.status }).from(issues).where(eq(issues.repositoryId, repositoryId)),
+  ]);
+  const now = Date.now();
+  return rows.map((milestone) => {
+    const related = issueRows.filter((issue) => issue.milestoneId === milestone.id);
+    const closedIssues = related.filter((issue) => issue.status === "closed").length;
+    const overdue = milestone.status === "open" && milestone.dueAt !== null && milestone.dueAt.getTime() < now;
+    return { ...milestone, openIssues: related.length - closedIssues, closedIssues, overdue };
+  });
+}
+
 export async function getRepositoryPulls(repositoryId: string) {
   return getDb().select().from(pullRequests).where(eq(pullRequests.repositoryId, repositoryId)).orderBy(desc(pullRequests.updatedAt));
 }
@@ -96,7 +116,42 @@ export async function getRepositoryBrain(repositoryId: string) {
 }
 
 export async function getRepositoryRuns(repositoryId: string) {
-  return getDb().select().from(agentRuns).where(eq(agentRuns.repositoryId, repositoryId)).orderBy(desc(agentRuns.createdAt));
+  const runs = await getDb().select().from(agentRuns).where(eq(agentRuns.repositoryId, repositoryId)).orderBy(desc(agentRuns.createdAt));
+  if (!runs.length) return [];
+  const runIds = runs.map((run) => run.id);
+  const [artifacts, reviews] = await Promise.all([
+    getDb().select().from(evidenceArtifacts).where(inArray(evidenceArtifacts.agentRunId, runIds)).orderBy(evidenceArtifacts.createdAt),
+    getDb().select().from(agentReviews).where(inArray(agentReviews.agentRunId, runIds)).orderBy(desc(agentReviews.createdAt)),
+  ]);
+  return runs.map((run) => ({
+    ...run,
+    artifacts: artifacts.filter((artifact) => artifact.agentRunId === run.id),
+    review: reviews.find((review) => review.agentRunId === run.id) ?? null,
+  }));
+}
+
+export async function getRepositoryIncidents(repositoryId: string) {
+  return getDb().select().from(incidents).where(eq(incidents.repositoryId, repositoryId)).orderBy(desc(incidents.createdAt));
+}
+
+export async function getRepositoryPolicyGates(repositoryId: string) {
+  const [gates] = await getDb().select().from(policyGates).where(eq(policyGates.repositoryId, repositoryId)).limit(1);
+  return gates ?? null;
+}
+
+export async function getWorkspaceSettings(organizationId: string) {
+  await getDb().insert(organizationSettings).values({ organizationId }).onConflictDoNothing();
+  const [settings] = await getDb().select().from(organizationSettings).where(eq(organizationSettings.organizationId, organizationId)).limit(1);
+  return settings!;
+}
+
+export async function getWorkspaceUsage(organizationId: string, period: string) {
+  const rows = await getDb()
+    .select({ kind: usageRecords.kind, total: sql<string>`coalesce(sum(${usageRecords.amount}), 0)` })
+    .from(usageRecords)
+    .where(and(eq(usageRecords.organizationId, organizationId), eq(usageRecords.period, period)))
+    .groupBy(usageRecords.kind);
+  return Object.fromEntries(rows.map((row) => [row.kind, Number(row.total)])) as Record<string, number>;
 }
 
 export async function getIssueDetail(repositoryId: string, number: number) {

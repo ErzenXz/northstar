@@ -7,10 +7,13 @@ organizations, issues, change records, project memory, and evidence-oriented AI
 workflows in one self-hostable product. The community edition and Origin Cloud
 run the same open core.
 
-> Status: Alpha 2. Origin owns Git transport and the merge decision: branches,
-> diffs, review, issue collaboration, statuses, webhooks, and self-hosted runner
-> coordination are native. Isolated code-execution sandboxes and hosted billing
-> remain roadmap work and are not represented as complete.
+> Status: Alpha 3. Origin owns the repository, the merge decision, and now
+> verified agent work: approved objectives execute in disposable sandboxes,
+> publish evidence, pass an independent review agent, and still end at a human
+> merge — with rollback and an incident trail behind them. Workspace billing
+> meters and enforces model budgets locally; payment-provider invoicing and
+> screenshot/preview evidence are the next roadmap items and are not
+> represented as complete.
 
 ## What works today
 
@@ -19,7 +22,8 @@ run the same open core.
 - Personal access tokens stored as one-way hashes
 - Signed SSH user keys plus repository-scoped read/write deploy keys
 - Native branches, source diffs, file comments, commit-bound approvals, checks, and merge operations
-- Issue comments, workspace assignees, milestones, and repository labels
+- Issue comments, workspace assignees, and repository labels
+- Milestones with due dates, burn-down progress, and issue filtering
 - One-step GitHub migration for history, branches, tags, issues, comments, reviews, releases, assets, and wikis
 - Encrypted temporary GitHub credentials in the background job queue
 - HMAC-signed webhooks with redirect and private-network protections
@@ -28,6 +32,15 @@ run the same open core.
 - Repository pulse combining human, system, and agent activity
 - Source-grounded project memory with a no-key deterministic fallback
 - AI objective planning through the provider-neutral Vercel AI SDK
+- Human-approved agent execution in disposable, network-controlled sandboxes
+- Patch, test, and sandbox-profile evidence artifacts on every agent run
+- An independent review agent, per-repository policy gates, and blocked-path rules
+- One-click rollback of merged agent changes with a persistent incident trail
+- Region-scoped repository backups with checksums and automated restore tests
+- Workspace billing plans with metered, enforced monthly model-token budgets
+- OIDC single sign-on, SCIM user provisioning, and owner-exportable audit trails
+- Abuse controls: sign-in rate limits, repository count and size quotas
+- An instance operations console for queue health, backups, incidents, and runners
 - Docker Compose self-hosting with PostgreSQL and shared repository storage
 - A clean edition seam for managed cloud capabilities
 

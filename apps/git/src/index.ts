@@ -4,8 +4,8 @@ import { execFileSync, spawn } from "node:child_process";
 import { join, resolve } from "node:path";
 import Fastify from "fastify";
 import { and, eq } from "drizzle-orm";
-import { accessTokens, activityEvents, getDb, jobs, organizationMembers, organizations, repositories, users } from "@origin/db";
-import { resolveRepositoryPath } from "@origin/git";
+import { accessTokens, activityEvents, getDb, jobs, organizationMembers, organizationSettings, organizations, repositories, users } from "@origin/db";
+import { repositorySizeBytes, resolveRepositoryPath } from "@origin/git";
 
 const app = Fastify({ logger: true, bodyLimit: 250 * 1024 * 1024 });
 const repositoryRoot = resolve(process.env.ORIGIN_REPOSITORY_ROOT ?? "../../data/repositories");
@@ -74,6 +74,17 @@ app.all("/*", async (request, reply) => {
   if (!access.allowed) {
     reply.header("WWW-Authenticate", 'Basic realm="Origin Git"');
     return reply.code(401).send("Authentication required\n");
+  }
+
+  if (isReceiveOperation) {
+    const [limits] = await getDb().select({ maxRepositorySizeMb: organizationSettings.maxRepositorySizeMb }).from(organizationSettings).where(eq(organizationSettings.organizationId, repository.organizationId)).limit(1);
+    const limitMb = limits?.maxRepositorySizeMb ?? 2_048;
+    if (limitMb > 0) {
+      const currentBytes = await repositorySizeBytes(repositoryRoot, repository.storageKey).catch(() => 0);
+      if (currentBytes > limitMb * 1024 * 1024) {
+        return reply.code(403).send(`Repository exceeds the workspace size quota of ${limitMb} MB. Raise the quota in workspace settings.\n`);
+      }
+    }
   }
 
   resolveRepositoryPath(repositoryRoot, repository.storageKey);

@@ -37,7 +37,7 @@ export async function getCurrentUser() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const [user] = await getDb()
-    .select({ id: users.id, name: users.name, username: users.username, email: users.email, avatarUrl: users.avatarUrl })
+    .select({ id: users.id, name: users.name, username: users.username, email: users.email, avatarUrl: users.avatarUrl, admin: users.admin })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     .where(and(eq(sessions.tokenHash, hashToken(token)), gt(sessions.expiresAt, new Date())))
@@ -48,6 +48,12 @@ export async function getCurrentUser() {
 export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
+  return user;
+}
+
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (!user.admin) redirect("/");
   return user;
 }
 

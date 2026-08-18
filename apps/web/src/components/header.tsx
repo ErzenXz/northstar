@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CirclePlus, CloudDownload, LogOut, Settings } from "lucide-react";
+import { Activity, CirclePlus, CloudDownload, LogOut, Settings } from "lucide-react";
 import { getEdition } from "@origin/core";
 import { getCurrentUser } from "@/lib/auth";
 import { signOutAction } from "@/app/actions";
@@ -15,17 +15,18 @@ export async function Header() {
         <nav className="header-actions" aria-label="Primary navigation">
           {user ? (
             <>
-              <Link href="/import" className="header-link"><CloudDownload size={16} /> Import</Link>
-              <Link href="/new" className="button button-small"><CirclePlus size={16} /> New repository</Link>
-              <Link href="/settings/tokens" className="icon-button" aria-label="Settings"><Settings size={18} /></Link>
-              <form action={signOutAction}><button className="icon-button" aria-label="Sign out"><LogOut size={18} /></button></form>
+              {user.admin && <Link href="/ops" className="header-link"><Activity size={15} /> Ops</Link>}
+              <Link href="/import" className="header-link"><CloudDownload size={15} /> Import</Link>
+              <Link href="/new" className="button button-small button-primary"><CirclePlus size={15} /> New repository</Link>
+              <Link href="/settings/tokens" className="icon-button" aria-label="Settings"><Settings /></Link>
+              <form action={signOutAction}><button className="icon-button" aria-label="Sign out"><LogOut /></button></form>
               <Link href="/" className="avatar" title={user.name}>{user.name.slice(0, 2).toUpperCase()}</Link>
             </>
           ) : (
             <>
               <a href="https://github.com" className="header-link">Source</a>
               <Link href="/sign-in" className="header-link">Sign in</Link>
-              <Link href="/sign-up" className="button button-small">Create your forge</Link>
+              <Link href="/sign-up" className="button button-small button-primary">Create your forge</Link>
             </>
           )}
         </nav>

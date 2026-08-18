@@ -22,7 +22,10 @@ if (!user) {
     username,
     email,
     passwordHash: await hash(password),
+    admin: true,
   }).returning();
+} else if (!user.admin) {
+  await getDb().update(users).set({ admin: true }).where(eq(users.id, user.id));
 }
 
 let [organization] = await getDb().select().from(organizations).where(eq(organizations.slug, username)).limit(1);
@@ -93,7 +96,8 @@ if (!branches.includes("feature/decision-rail")) {
 }
 
 const [productLabel] = await getDb().insert(labels).values({ repositoryId: repository!.id, name: "product", color: "2d63ff", description: "Changes visible to the people using Origin" }).onConflictDoUpdate({ target: [labels.repositoryId, labels.name], set: { color: "2d63ff" } }).returning();
-const [alphaMilestone] = await getDb().insert(milestones).values({ repositoryId: repository!.id, number: 1, title: "Alpha 2", description: "Own the merge decision" }).onConflictDoUpdate({ target: [milestones.repositoryId, milestones.number], set: { title: "Alpha 2" } }).returning();
+const milestoneDue = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000);
+const [alphaMilestone] = await getDb().insert(milestones).values({ repositoryId: repository!.id, number: 1, title: "Alpha 2", description: "Own the merge decision", dueAt: milestoneDue }).onConflictDoUpdate({ target: [milestones.repositoryId, milestones.number], set: { title: "Alpha 2", dueAt: milestoneDue } }).returning();
 const [demoIssue] = await getDb().insert(issues).values({ repositoryId: repository!.id, number: 1, title: "Explain why a change is ready", body: "The merge surface should combine the diff, conversation, approvals, and checks.", authorName: username, milestoneId: alphaMilestone!.id }).onConflictDoUpdate({ target: [issues.repositoryId, issues.number], set: { milestoneId: alphaMilestone!.id } }).returning();
 await getDb().insert(issueLabels).values({ issueId: demoIssue!.id, labelId: productLabel!.id }).onConflictDoNothing();
 await getDb().insert(issueAssignees).values({ issueId: demoIssue!.id, userId: user!.id }).onConflictDoNothing();

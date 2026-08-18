@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -22,6 +23,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   avatarUrl: text("avatar_url"),
+  admin: boolean("admin").notNull().default(false),
+  ssoSubject: text("sso_subject"),
   ...timestamps,
 });
 
@@ -432,11 +435,139 @@ export const agentRuns = pgTable(
     plan: jsonb("plan").$type<Array<{ step: string; status: string }>>().notNull().default([]),
     summary: text("summary"),
     evidence: jsonb("evidence").$type<Array<{ label: string; value: string }>>().notNull().default([]),
+    approvedById: uuid("approved_by_id").references(() => users.id, { onDelete: "set null" }),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    executedAt: timestamp("executed_at", { withTimezone: true }),
+    rolledBackAt: timestamp("rolled_back_at", { withTimezone: true }),
+    headSha: text("head_sha"),
+    baseSha: text("base_sha"),
+    pullRequestNumber: integer("pull_request_number"),
+    error: text("error"),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => [index("agent_runs_repo_status_idx").on(table.repositoryId, table.status)],
+);
+
+export const evidenceArtifacts = pgTable(
+  "evidence_artifacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentRunId: uuid("agent_run_id").notNull().references(() => agentRuns.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull().default(""),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("evidence_artifacts_run_idx").on(table.agentRunId, table.createdAt)],
+);
+
+export const agentReviews = pgTable(
+  "agent_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentRunId: uuid("agent_run_id").notNull().references(() => agentRuns.id, { onDelete: "cascade" }),
+    reviewer: text("reviewer").notNull().default("origin-review-agent"),
+    verdict: text("verdict").notNull(),
+    summary: text("summary").notNull().default(""),
+    concerns: jsonb("concerns").$type<string[]>().notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("agent_reviews_run_idx").on(table.agentRunId)],
+);
+
+export const policyGates = pgTable("policy_gates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  repositoryId: uuid("repository_id").notNull().unique().references(() => repositories.id, { onDelete: "cascade" }),
+  requireHumanApproval: boolean("require_human_approval").notNull().default(true),
+  requireAgentReview: boolean("require_agent_review").notNull().default(true),
+  requirePassingChecks: boolean("require_passing_checks").notNull().default(true),
+  allowNetwork: boolean("allow_network").notNull().default(false),
+  runTests: boolean("run_tests").notNull().default(true),
+  blockedPaths: jsonb("blocked_paths").$type<string[]>().notNull().default([".git/", ".origin/policies"]),
+  maxChangedFiles: integer("max_changed_files").notNull().default(25),
+  ...timestamps,
+});
+
+export const incidents = pgTable(
+  "incidents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    repositoryId: uuid("repository_id").notNull().references(() => repositories.id, { onDelete: "cascade" }),
+    agentRunId: uuid("agent_run_id").references(() => agentRuns.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    detail: text("detail").notNull().default(""),
+    status: text("status").notNull().default("open"),
+    resolvedBy: text("resolved_by"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [index("incidents_repo_status_idx").on(table.repositoryId, table.status)],
+);
+
+export const backups = pgTable(
+  "backups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    repositoryId: uuid("repository_id").notNull().references(() => repositories.id, { onDelete: "cascade" }),
+    storagePath: text("storage_path").notNull(),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull().default(0),
+    checksum: text("checksum"),
+    status: text("status").notNull().default("completed"),
+    restoreTestedAt: timestamp("restore_tested_at", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("backups_repo_created_idx").on(table.repositoryId, table.createdAt)],
+);
+
+export const organizationSettings = pgTable("organization_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().unique().references(() => organizations.id, { onDelete: "cascade" }),
+  plan: text("plan").notNull().default("community"),
+  billingEmail: text("billing_email"),
+  region: text("region").notNull().default("us"),
+  aiTokenBudget: integer("ai_token_budget").notNull().default(2_000_000),
+  maxRepositories: integer("max_repositories").notNull().default(0),
+  maxRepositorySizeMb: integer("max_repository_size_mb").notNull().default(2_048),
+  scimTokenHash: text("scim_token_hash"),
+  ssoEnabled: boolean("sso_enabled").notNull().default(false),
+  ssoIssuer: text("sso_issuer"),
+  ssoClientId: text("sso_client_id"),
+  ssoClientSecretEncrypted: text("sso_client_secret_encrypted"),
+  ...timestamps,
+});
+
+export const usageRecords = pgTable(
+  "usage_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    amount: bigint("amount", { mode: "number" }).notNull().default(0),
+    period: text("period").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("usage_records_org_period_idx").on(table.organizationId, table.period, table.kind)],
+);
+
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    actorName: text("actor_name").notNull(),
+    action: text("action").notNull(),
+    target: text("target").notNull().default(""),
+    ip: text("ip"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("audit_events_org_created_idx").on(table.organizationId, table.createdAt)],
 );
 
 export const activityEvents = pgTable(
@@ -489,6 +620,14 @@ export const accessTokens = pgTable(
 );
 
 export type User = typeof users.$inferSelect;
+export type EvidenceArtifact = typeof evidenceArtifacts.$inferSelect;
+export type AgentReview = typeof agentReviews.$inferSelect;
+export type PolicyGate = typeof policyGates.$inferSelect;
+export type Incident = typeof incidents.$inferSelect;
+export type Backup = typeof backups.$inferSelect;
+export type OrganizationSettings = typeof organizationSettings.$inferSelect;
+export type UsageRecord = typeof usageRecords.$inferSelect;
+export type AuditEvent = typeof auditEvents.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 export type Repository = typeof repositories.$inferSelect;
 export type Issue = typeof issues.$inferSelect;

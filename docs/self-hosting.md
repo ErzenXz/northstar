@@ -10,8 +10,9 @@ and trusted teams.
 3. Replace default PostgreSQL credentials and enable encrypted backups.
 4. Back up both PostgreSQL and the repository volume as one recovery unit.
 5. Restrict worker egress to approved AI providers, import sources, and intended webhook targets.
-6. Configure request size, rate, and concurrency limits at the edge.
-7. Do not expose future agent execution without isolated, disposable sandboxes.
+6. Configure request size, rate, and concurrency limits at the edge; Origin's built-in sign-in limiter is per-process and should sit behind an edge limiter in multi-node deployments.
+7. Run the worker with `--network none`-style egress rules where possible: agent sandboxes deny network access by policy, and the enforcement mechanism (Linux network namespace, macOS seatbelt, or restricted-env fallback) is recorded as evidence on every run.
+8. Point `ORIGIN_SANDBOX_ROOT` and `ORIGIN_BACKUP_ROOT` at storage with room for disposable workspaces and region-scoped repository bundles.
 
 The Git HTTP and SSH services are stateless apart from their database,
 repository-volume, and persisted SSH host-key dependencies. The worker claims
@@ -26,7 +27,8 @@ unexpected host-key rotation will trigger warnings for every SSH client.
 - SSH: TCP port `2222` (or your configured `ORIGIN_SSH_PORT`)
 - PostgreSQL: `pg_isready`
 
-Alpha 2 does not yet ship object-storage replication, SAML, audit export,
-disaster-recovery automation, or isolated execution sandboxes. The runner
-protocol coordinates work; operators remain responsible for sandboxing runner
-processes and protecting runner credentials.
+Alpha 3 ships isolated execution sandboxes, region-scoped bundle backups with
+automated restore tests, OIDC SSO, SCIM provisioning, and owner audit export.
+Object-storage backup targets, SAML, and cross-region fan-out remain roadmap
+work. The runner protocol coordinates external work; operators remain
+responsible for sandboxing runner processes and protecting runner credentials.

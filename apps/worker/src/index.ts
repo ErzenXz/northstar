@@ -30,10 +30,15 @@ import {
 } from "@origin/db";
 import { getDefaultBranch, listTree, mirrorRepository, readReadme, readTextFile } from "@origin/git";
 import { and, eq, sql } from "drizzle-orm";
+import { executeAgentRun, reviewAgentRun, rollbackAgentRun } from "./agents";
+import { backupRepositories } from "./backups";
+import { assertAiBudget, chargeAiUsage } from "./billing";
 
 type ClaimedJob = { id: string; type: string; payload: Record<string, unknown>; attempts: number };
 const repositoryRoot = resolve(process.env.ORIGIN_REPOSITORY_ROOT ?? "../../data/repositories");
 const assetRoot = resolve(process.env.ORIGIN_ASSET_ROOT ?? "../../data/assets");
+const sandboxRoot = resolve(process.env.ORIGIN_SANDBOX_ROOT ?? "../../data/sandboxes");
+const backupRoot = resolve(process.env.ORIGIN_BACKUP_ROOT ?? "../../data/backups");
 let stopping = false;
 
 async function claimJob(): Promise<ClaimedJob | null> {
@@ -350,7 +355,9 @@ async function analyzeRepository(job: ClaimedJob) {
   for (const entry of tree.filter((item) => item.type === "blob" && contextNames.includes(item.name)).slice(0, 8)) {
     files.push({ path: entry.path, content: await readTextFile(repositoryRoot, repository.storageKey, repository.defaultBranch, entry.path) });
   }
-  const brain = await buildRepositoryBrain({ repositoryName: repository.name, readme: readme?.content, files });
+  await assertAiBudget(repository.organizationId);
+  const { brain, usage } = await buildRepositoryBrain({ repositoryName: repository.name, readme: readme?.content, files });
+  await chargeAiUsage(repository.organizationId, usage.totalTokens, "analyze-repository");
   await getDb().delete(repositoryMemories).where(eq(repositoryMemories.repositoryId, repositoryId));
   await getDb().insert(repositoryMemories).values([
     { repositoryId, kind: "purpose", title: "What this repository does", content: brain.purpose, confidence: 90 },
@@ -378,12 +385,14 @@ async function planAgentRun(job: ClaimedJob) {
   await getDb().update(agentRuns).set({ status: "planning", startedAt: new Date(), updatedAt: new Date() }).where(eq(agentRuns.id, runId));
   const tree = await listTree(repositoryRoot, repository.storageKey, repository.defaultBranch);
   const readme = await readReadme(repositoryRoot, repository.storageKey, repository.defaultBranch);
-  const plan = await planRepositoryObjective({
+  await assertAiBudget(repository.organizationId);
+  const { plan, usage } = await planRepositoryObjective({
     objective: run.objective,
     repositoryName: repository.name,
     readme: readme?.content,
     tree: tree.map((entry) => entry.path),
   });
+  await chargeAiUsage(repository.organizationId, usage.totalTokens, "plan-agent-run");
   await getDb().update(agentRuns).set({
     status: "ready",
     plan: plan.steps.map((item) => ({ step: item.step, status: "pending" })),
@@ -409,6 +418,10 @@ async function perform(job: ClaimedJob) {
   if (job.type === "analyze-repository") return analyzeRepository(job);
   if (job.type === "plan-agent-run") return planAgentRun(job);
   if (job.type === "deliver-webhook-event") return deliverWebhookEvent(job);
+  if (job.type === "execute-agent-run") return executeAgentRun(job.payload, repositoryRoot, sandboxRoot);
+  if (job.type === "review-agent-run") return reviewAgentRun(job.payload, repositoryRoot);
+  if (job.type === "rollback-agent-run") return rollbackAgentRun(job.payload, repositoryRoot, sandboxRoot);
+  if (job.type === "backup-repositories") return backupRepositories(job.payload, repositoryRoot, backupRoot);
   throw new Error(`Unsupported job type: ${job.type}`);
 }
 

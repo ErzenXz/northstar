@@ -4,6 +4,8 @@ x-origin-env: &origin-env
   DATABASE_URL: postgresql://origin:origin@postgres:5432/origin
   ORIGIN_REPOSITORY_ROOT: /var/lib/origin/repositories
   ORIGIN_ASSET_ROOT: /var/lib/origin/assets
+  ORIGIN_SANDBOX_ROOT: /var/lib/origin/sandboxes
+  ORIGIN_BACKUP_ROOT: /var/lib/origin/backups
   ORIGIN_BASE_URL: http://localhost:3000
   ORIGIN_GIT_URL: http://localhost:4000
   ORIGIN_SSH_URL: ssh://git@localhost:2222
@@ -94,6 +96,7 @@ services:
     volumes:
       - origin-repositories:/var/lib/origin/repositories
       - origin-assets:/var/lib/origin/assets
+      - origin-backups:/var/lib/origin/backups
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -114,4 +117,5 @@ volumes:
   origin-postgres:
   origin-repositories:
   origin-assets:
+  origin-backups:
   origin-ssh:

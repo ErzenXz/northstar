@@ -10,6 +10,18 @@ export function getEdition(value = process.env.ORIGIN_EDITION): OriginEdition {
   return value === "cloud" ? "cloud" : "community";
 }
 
+export const dataRegions = ["us", "eu"] as const;
+export type DataRegion = (typeof dataRegions)[number];
+
+export function assertDataRegion(value: string): DataRegion {
+  if (!dataRegions.includes(value as DataRegion)) throw new Error(`Data region must be one of: ${dataRegions.join(", ")}`);
+  return value as DataRegion;
+}
+
+export function usagePeriod(date = new Date()): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 export function slugify(value: string): string {
   return value
     .trim()

@@ -19,15 +19,22 @@
 
 ## Alpha 3 — verified agent work
 
-- [ ] Disposable, network-controlled execution sandboxes
-- [ ] Repository-scoped tools with explicit write approvals
-- [ ] Patch, test, screenshot, and preview evidence artifacts
-- [ ] Independent review agents and policy gates
-- [ ] Human approval, merge, rollback, and incident trails
+- [x] Disposable, network-controlled execution sandboxes
+- [x] Repository-scoped tools with explicit write approvals
+- [x] Patch, test, and sandbox-profile evidence artifacts
+- [x] Independent review agents and policy gates
+- [x] Human approval, merge, rollback, and incident trails
 
 ## Hosted beta
 
-- [ ] Managed storage replication, backups, and restore testing
-- [ ] Organization billing and model budgets
-- [ ] SSO, SCIM, audit export, and regional data controls
-- [ ] Production abuse controls and operations console
+- [x] Managed storage replication, backups, and restore testing
+- [x] Organization billing plans and enforced model budgets
+- [x] SSO, SCIM, audit export, and regional data controls
+- [x] Abuse controls and an operations console
+
+## Next
+
+- [ ] Screenshot and preview evidence artifacts from runner-executed jobs
+- [ ] Payment-provider integration in Origin Cloud (community edition keeps local metering)
+- [ ] Cross-region backup fan-out and object-storage targets
+- [ ] Organization-level runner pools with hardware isolation

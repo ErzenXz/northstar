@@ -5,14 +5,17 @@ import { hash, verify } from "argon2";
 import { and, desc, eq, max } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { encryptSecret, repositoryStorageKey, requiredEnv, slugify } from "@origin/core";
+import { assertDataRegion, encryptSecret, repositoryStorageKey, requiredEnv, slugify } from "@origin/core";
+import { clientAddress, enforceRateLimit } from "@/lib/rate-limit";
 import {
   accessTokens,
   activityEvents,
   agentRuns,
+  auditEvents,
   commitStatuses,
   deployKeys,
   getDb,
+  incidents,
   issueAssignees,
   issueComments,
   issueLabels,
@@ -21,7 +24,9 @@ import {
   labels,
   milestones,
   organizationMembers,
+  organizationSettings,
   organizations,
+  policyGates,
   pullRequestComments,
   pullRequestReviews,
   pullRequests,
@@ -55,7 +60,12 @@ async function queueRepositoryEvent(repositoryId: string, event: string, payload
   await getDb().insert(jobs).values({ type: "deliver-webhook-event", payload: { repositoryId, event, payload } });
 }
 
+async function recordAudit(organizationId: string, actorName: string, action: string, target = "", metadata: Record<string, unknown> = {}) {
+  await getDb().insert(auditEvents).values({ organizationId, actorName, action, target, ip: await clientAddress(), metadata });
+}
+
 export async function signUpAction(formData: FormData) {
+  await enforceRateLimit("sign-up", 10, 60_000).catch(() => fail("/sign-up", "Too many attempts. Wait a minute and try again."));
   const name = value(formData, "name");
   const email = value(formData, "email").toLowerCase();
   const username = slugify(value(formData, "username"));
@@ -81,11 +91,14 @@ export async function signUpAction(formData: FormData) {
 }
 
 export async function signInAction(formData: FormData) {
+  await enforceRateLimit("sign-in", 20, 60_000).catch(() => fail("/sign-in", "Too many attempts. Wait a minute and try again."));
   const identity = value(formData, "identity").toLowerCase();
   const password = value(formData, "password");
   const [user] = await getDb().select().from(users).where(identity.includes("@") ? eq(users.email, identity) : eq(users.username, identity)).limit(1);
   if (!user || !(await verify(user.passwordHash, password))) fail("/sign-in", "Email, username, or password is incorrect.");
   await createSession(user.id);
+  const [workspace] = await getDb().select({ organizationId: organizationMembers.organizationId }).from(organizationMembers).where(eq(organizationMembers.userId, user.id)).limit(1);
+  if (workspace) await recordAudit(workspace.organizationId, user.username, "session.signed_in");
   redirect("/");
 }
 
@@ -126,6 +139,11 @@ export async function createRepositoryAction(formData: FormData) {
   const description = value(formData, "description");
   const visibility = value(formData, "visibility") === "public" ? "public" : "private";
   if (!repositorySlug) fail("/new", "Give the repository a name.");
+  const [settings] = await getDb().select().from(organizationSettings).where(eq(organizationSettings.organizationId, organizationId)).limit(1);
+  if (settings?.maxRepositories) {
+    const existing = await getDb().select({ id: repositories.id }).from(repositories).where(eq(repositories.organizationId, organizationId));
+    if (existing.length >= settings.maxRepositories) fail("/new", `This workspace has reached its ${settings.maxRepositories}-repository quota.`);
+  }
   const storageKey = repositoryStorageKey(organization.slug, repositorySlug);
   let repositoryId: string | undefined;
   try {
@@ -245,8 +263,28 @@ export async function createMilestoneAction(formData: FormData) {
   const repositoryId = value(formData, "repositoryId");
   const row = await requireRepositoryMember(user.id, repositoryId);
   const title = value(formData, "title");
+  if (title.length < 2) throw new Error("Milestone title is too short");
+  const due = value(formData, "dueAt");
   const [current] = await getDb().select({ number: max(milestones.number) }).from(milestones).where(eq(milestones.repositoryId, repositoryId));
-  await getDb().insert(milestones).values({ repositoryId, number: (current?.number ?? 0) + 1, title, description: value(formData, "description") });
+  await getDb().insert(milestones).values({ repositoryId, number: (current?.number ?? 0) + 1, title, description: value(formData, "description"), dueAt: due ? new Date(`${due}T12:00:00Z`) : null });
+  await queueRepositoryEvent(repositoryId, "milestone", { action: "created", number: (current?.number ?? 0) + 1, title });
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/milestones`);
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/issues`);
+}
+
+export async function updateMilestoneAction(formData: FormData) {
+  const user = await requireUser();
+  const repositoryId = value(formData, "repositoryId");
+  const milestoneId = value(formData, "milestoneId");
+  const row = await requireRepositoryMember(user.id, repositoryId);
+  const [milestone] = await getDb().select().from(milestones).where(and(eq(milestones.id, milestoneId), eq(milestones.repositoryId, repositoryId))).limit(1);
+  if (!milestone) throw new Error("Milestone not found");
+  const intent = value(formData, "intent");
+  if (intent !== "close" && intent !== "reopen") throw new Error("Unsupported milestone update");
+  const status = intent === "close" ? "closed" : "open";
+  await getDb().update(milestones).set({ status, closedAt: status === "closed" ? new Date() : null, updatedAt: new Date() }).where(eq(milestones.id, milestone.id));
+  await queueRepositoryEvent(repositoryId, "milestone", { action: status === "closed" ? "closed" : "reopened", number: milestone.number, title: milestone.title });
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/milestones`);
   revalidatePath(`/${row.organization.slug}/${row.repository.slug}/issues`);
 }
 
@@ -428,4 +466,129 @@ export async function createAccessTokenAction(_state: TokenActionState, formData
   });
   revalidatePath("/settings/tokens");
   return { token };
+}
+
+export async function approveAgentRunAction(formData: FormData) {
+  const user = await requireUser();
+  const repositoryId = value(formData, "repositoryId");
+  const runId = value(formData, "runId");
+  const row = await requireRepositoryMember(user.id, repositoryId);
+  const [run] = await getDb().select().from(agentRuns).where(and(eq(agentRuns.id, runId), eq(agentRuns.repositoryId, repositoryId))).limit(1);
+  if (!run) throw new Error("Agent run not found");
+  if (run.status !== "ready") throw new Error("Only planned runs can be approved for execution");
+  await getDb().update(agentRuns).set({ status: "approved", approvedById: user.id, approvedAt: new Date(), updatedAt: new Date() }).where(eq(agentRuns.id, runId));
+  await getDb().insert(jobs).values({ type: "execute-agent-run", payload: { runId } });
+  await getDb().insert(activityEvents).values({ repositoryId, actorType: "human", actorName: user.username, type: "agent.approved", title: `Approved execution: ${run.objective.slice(0, 80)}`, detail: "The sandbox will publish an agent/* branch for independent review." });
+  await recordAudit(row.organization.id, user.username, "agent_run.approved", run.objective.slice(0, 120), { runId });
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/agents`);
+}
+
+export async function rollbackAgentRunAction(formData: FormData) {
+  const user = await requireUser();
+  const repositoryId = value(formData, "repositoryId");
+  const runId = value(formData, "runId");
+  const row = await requireRepositoryMember(user.id, repositoryId);
+  const [run] = await getDb().select().from(agentRuns).where(and(eq(agentRuns.id, runId), eq(agentRuns.repositoryId, repositoryId))).limit(1);
+  if (!run) throw new Error("Agent run not found");
+  await getDb().insert(jobs).values({ type: "rollback-agent-run", payload: { runId, actorName: user.username } });
+  await recordAudit(row.organization.id, user.username, "agent_run.rollback_requested", run.objective.slice(0, 120), { runId });
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/agents`);
+}
+
+export async function updatePolicyGatesAction(formData: FormData) {
+  const user = await requireUser();
+  const repositoryId = value(formData, "repositoryId");
+  const row = await requireRepositoryMember(user.id, repositoryId);
+  const maxChangedFiles = Math.min(Math.max(Number(value(formData, "maxChangedFiles")) || 25, 1), 500);
+  const blockedPaths = value(formData, "blockedPaths").split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 50);
+  const settings = {
+    requireHumanApproval: true,
+    requireAgentReview: formData.get("requireAgentReview") === "on",
+    requirePassingChecks: formData.get("requirePassingChecks") === "on",
+    allowNetwork: formData.get("allowNetwork") === "on",
+    runTests: formData.get("runTests") === "on",
+    blockedPaths,
+    maxChangedFiles,
+    updatedAt: new Date(),
+  };
+  await getDb().insert(policyGates).values({ repositoryId, ...settings }).onConflictDoUpdate({ target: policyGates.repositoryId, set: settings });
+  await recordAudit(row.organization.id, user.username, "policy_gates.updated", row.repository.slug, settings);
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/settings/policies`);
+}
+
+export async function resolveIncidentAction(formData: FormData) {
+  const user = await requireUser();
+  const repositoryId = value(formData, "repositoryId");
+  const incidentId = value(formData, "incidentId");
+  const row = await requireRepositoryMember(user.id, repositoryId);
+  await getDb().update(incidents).set({ status: "resolved", resolvedBy: user.username, resolvedAt: new Date(), updatedAt: new Date() }).where(and(eq(incidents.id, incidentId), eq(incidents.repositoryId, repositoryId)));
+  await recordAudit(row.organization.id, user.username, "incident.resolved", incidentId);
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/settings/incidents`);
+  revalidatePath(`/${row.organization.slug}/${row.repository.slug}/agents`);
+}
+
+export async function updateWorkspaceSettingsAction(formData: FormData) {
+  const user = await requireUser();
+  const organizationId = value(formData, "organizationId");
+  const organization = await requireOrganization(user.id, organizationId);
+  const region = assertDataRegion(value(formData, "region") || "us");
+  const plan = ["community", "team", "enterprise"].includes(value(formData, "plan")) ? value(formData, "plan") : "community";
+  const settings = {
+    plan,
+    billingEmail: value(formData, "billingEmail") || null,
+    region,
+    aiTokenBudget: Math.max(Number(value(formData, "aiTokenBudget")) || 0, 0),
+    maxRepositories: Math.max(Number(value(formData, "maxRepositories")) || 0, 0),
+    maxRepositorySizeMb: Math.min(Math.max(Number(value(formData, "maxRepositorySizeMb")) || 2048, 64), 51_200),
+    updatedAt: new Date(),
+  };
+  await getDb().insert(organizationSettings).values({ organizationId, ...settings }).onConflictDoUpdate({ target: organizationSettings.organizationId, set: settings });
+  await recordAudit(organizationId, user.username, "workspace.settings_updated", organization.slug, { plan, region });
+  revalidatePath("/settings/workspace");
+}
+
+export async function configureSsoAction(formData: FormData) {
+  const user = await requireUser();
+  const organizationId = value(formData, "organizationId");
+  const organization = await requireOrganization(user.id, organizationId);
+  const enabled = formData.get("ssoEnabled") === "on";
+  const issuer = value(formData, "ssoIssuer");
+  const clientId = value(formData, "ssoClientId");
+  const clientSecret = value(formData, "ssoClientSecret");
+  if (enabled) {
+    const issuerUrl = new URL(issuer);
+    if (issuerUrl.protocol !== "https:") throw new Error("The OIDC issuer must use HTTPS");
+    if (!clientId) throw new Error("An OIDC client id is required");
+  }
+  const set = {
+    ssoEnabled: enabled,
+    ssoIssuer: issuer || null,
+    ssoClientId: clientId || null,
+    ...(clientSecret ? { ssoClientSecretEncrypted: await encryptSecret(clientSecret, requiredEnv("ORIGIN_ENCRYPTION_KEY")) } : {}),
+    updatedAt: new Date(),
+  };
+  await getDb().insert(organizationSettings).values({ organizationId, ...set }).onConflictDoUpdate({ target: organizationSettings.organizationId, set });
+  await recordAudit(organizationId, user.username, "sso.configured", organization.slug, { enabled, issuer });
+  revalidatePath("/settings/workspace");
+}
+
+export type ScimTokenState = { token?: string; error?: string };
+
+export async function generateScimTokenAction(_state: ScimTokenState, formData: FormData): Promise<ScimTokenState> {
+  const user = await requireUser();
+  const organizationId = value(formData, "organizationId");
+  const organization = await requireOrganization(user.id, organizationId);
+  const token = `scim_${randomBytes(32).toString("base64url")}`;
+  const set = { scimTokenHash: createHash("sha256").update(token).digest("hex"), updatedAt: new Date() };
+  await getDb().insert(organizationSettings).values({ organizationId, ...set }).onConflictDoUpdate({ target: organizationSettings.organizationId, set });
+  await recordAudit(organizationId, user.username, "scim.token_rotated", organization.slug);
+  revalidatePath("/settings/workspace");
+  return { token };
+}
+
+export async function runBackupSweepAction() {
+  const user = await requireUser();
+  if (!user.admin) throw new Error("Only instance operators can run backup sweeps");
+  await getDb().insert(jobs).values({ type: "backup-repositories", payload: { requestedBy: user.username } });
+  revalidatePath("/ops");
 }

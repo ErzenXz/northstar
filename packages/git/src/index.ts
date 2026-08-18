@@ -201,6 +201,95 @@ export async function readReadme(root: string, storageKey: string, reference: st
   return readme ? { name: readme.name, content: await readTextFile(root, storageKey, reference, readme.path) } : null;
 }
 
+export async function createWorkspace(root: string, storageKey: string, reference: string, directory: string) {
+  await validateBranchName(reference);
+  const barePath = resolveRepositoryPath(root, storageKey);
+  await mkdir(directory, { recursive: true });
+  const workdir = await mkdtemp(join(directory, "origin-sandbox-"));
+  await git(["clone", "--branch", reference, "--single-branch", "--no-hardlinks", "--", barePath, workdir], { maxBuffer: 25 * 1024 * 1024 });
+  return workdir;
+}
+
+export async function workspaceDiff(workdir: string) {
+  await git(["-C", workdir, "add", "--all"]);
+  const [{ stdout: patch }, { stdout: numstat }] = await Promise.all([
+    git(["-C", workdir, "diff", "--cached", "--no-ext-diff", "--find-renames", "--unified=3"], { maxBuffer: 20 * 1024 * 1024 }),
+    git(["-C", workdir, "diff", "--cached", "--numstat"], { maxBuffer: 10 * 1024 * 1024 }),
+  ]);
+  const files = numstat.trim().split("\n").filter(Boolean).map((line) => {
+    const [additions, deletions, path] = line.split("\t");
+    return { path: path ?? "unknown", additions: Number(additions) || 0, deletions: Number(deletions) || 0 };
+  });
+  return { patch, files };
+}
+
+export async function commitWorkspace(workdir: string, message: string, actor: { name: string; email: string }) {
+  const identity = {
+    GIT_AUTHOR_NAME: actor.name,
+    GIT_AUTHOR_EMAIL: actor.email,
+    GIT_COMMITTER_NAME: actor.name,
+    GIT_COMMITTER_EMAIL: actor.email,
+  };
+  await git(["-C", workdir, "add", "--all"]);
+  await git(["-C", workdir, "commit", "-m", message], { env: identity });
+  const { stdout } = await git(["-C", workdir, "rev-parse", "HEAD"]);
+  return stdout.trim();
+}
+
+export async function pushWorkspaceBranch(workdir: string, branch: string) {
+  await validateBranchName(branch);
+  await git(["-C", workdir, "push", "origin", `HEAD:refs/heads/${branch}`], { maxBuffer: 25 * 1024 * 1024 });
+}
+
+export async function revertCommit(root: string, storageKey: string, branch: string, sha: string, actor: { name: string; email: string }, directory: string) {
+  if (!/^[a-f0-9]{7,64}$/.test(sha)) throw new Error("Commit hash is invalid");
+  const workdir = await createWorkspace(root, storageKey, branch, directory);
+  try {
+    const identity = {
+      GIT_AUTHOR_NAME: actor.name,
+      GIT_AUTHOR_EMAIL: actor.email,
+      GIT_COMMITTER_NAME: actor.name,
+      GIT_COMMITTER_EMAIL: actor.email,
+    };
+    const { stdout: parents } = await git(["-C", workdir, "rev-list", "--parents", "-n", "1", sha]);
+    const isMerge = parents.trim().split(" ").length > 2;
+    await git(["-C", workdir, "revert", "--no-edit", ...(isMerge ? ["-m", "1"] : []), sha], { env: identity });
+    const { stdout } = await git(["-C", workdir, "rev-parse", "HEAD"]);
+    await git(["-C", workdir, "push", "origin", `HEAD:refs/heads/${branch}`], { maxBuffer: 25 * 1024 * 1024 });
+    return stdout.trim();
+  } finally {
+    await rm(workdir, { recursive: true, force: true });
+  }
+}
+
+export async function bundleRepository(root: string, storageKey: string, targetPath: string) {
+  const path = resolveRepositoryPath(root, storageKey);
+  await mkdir(dirname(targetPath), { recursive: true });
+  await git(["-C", path, "bundle", "create", targetPath, "--all"], { maxBuffer: 25 * 1024 * 1024 });
+  const info = await stat(targetPath);
+  return { sizeBytes: info.size };
+}
+
+export async function verifyBundleRestore(bundlePath: string, scratchDirectory: string) {
+  await mkdir(scratchDirectory, { recursive: true });
+  const workdir = await mkdtemp(join(scratchDirectory, "origin-restore-"));
+  try {
+    await git(["bundle", "verify", bundlePath], { maxBuffer: 10 * 1024 * 1024 });
+    await git(["clone", "--bare", "--", bundlePath, join(workdir, "restore.git")], { maxBuffer: 25 * 1024 * 1024 });
+    await git(["-C", join(workdir, "restore.git"), "fsck", "--no-progress"], { maxBuffer: 10 * 1024 * 1024 });
+    return true;
+  } finally {
+    await rm(workdir, { recursive: true, force: true });
+  }
+}
+
+export async function repositorySizeBytes(root: string, storageKey: string) {
+  const path = resolveRepositoryPath(root, storageKey);
+  const { stdout } = await git(["-C", path, "count-objects", "-v"]);
+  const sizes = Object.fromEntries(stdout.trim().split("\n").map((line) => line.split(": ")));
+  return (Number(sizes["size"] ?? 0) + Number(sizes["size-pack"] ?? 0)) * 1024;
+}
+
 export async function listCommits(root: string, storageKey: string, reference: string, limit = 20): Promise<CommitSummary[]> {
   const path = resolveRepositoryPath(root, storageKey);
   const format = "%H%x1f%h%x1f%an%x1f%ae%x1f%aI%x1f%s%x1e";
