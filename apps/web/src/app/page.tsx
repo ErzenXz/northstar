@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Bot, BrainCircuit, Check, CloudDownload, Code2, GitBranch, GitPullRequest, Radio, ShieldCheck, Sparkles } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { getUserRepositories } from "@/lib/data";
+import { getForgeActivity, getUserRepositories } from "@/lib/data";
 
 function MarketingHome() {
   return (
@@ -55,20 +55,25 @@ function MarketingHome() {
 }
 
 async function Dashboard({ user }: { user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>> }) {
-  const rows = await getUserRepositories(user.id);
+  const [rows, activity] = await Promise.all([getUserRepositories(user.id), getForgeActivity(user.id)]);
   return (
     <main className="dashboard shell">
-      <div className="dashboard-heading"><div><p className="eyebrow-simple">YOUR FORGE</p><h1>Good afternoon, {user.name.split(" ")[0]}.</h1><p>Repositories, people, and agents in one working view.</p></div><Link href="/import" className="button button-primary"><CloudDownload size={17} /> Move a project</Link></div>
+      <div className="dashboard-heading"><div><h1>Overview</h1><p>Repositories, people, and agents across your forge.</p></div><Link href="/import" className="button"><CloudDownload size={15} /> Import a project</Link></div>
       <div className="dashboard-layout">
         <section className="panel repositories-panel">
-          <div className="panel-heading"><div><h2>Repositories</h2><span>{rows.length} total</span></div><Link href="/new">New repository <ArrowRight size={15} /></Link></div>
+          <div className="panel-heading"><div><h2>Repositories</h2><span>{rows.length}</span></div><Link href="/new">New repository <ArrowRight size={14} /></Link></div>
           {rows.length ? <div className="repo-list">{rows.map(({ repository, organization }) => (
             <Link href={`/${organization.slug}/${repository.slug}`} key={repository.id}>
-              <div className="repo-glyph"><GitBranch size={18} /></div><div><b>{organization.slug} / {repository.name}</b><p>{repository.description || "No description yet"}</p><small>{repository.language || "Git"} · updated {repository.updatedAt.toLocaleDateString()}</small></div><span className="visibility">{repository.visibility}</span><ArrowRight size={17} />
+              <div className="repo-glyph"><GitBranch size={16} /></div><div><b>{organization.slug} / {repository.name}</b><p>{repository.description || "No description yet"}</p><small>{repository.language || "Git"} · updated {repository.updatedAt.toLocaleDateString()}</small></div><span className="visibility">{repository.visibility}</span><ArrowRight size={15} />
             </Link>
-          ))}</div> : <div className="dashboard-empty"><GitBranch /><h3>Your forge is ready.</h3><p>Create a repository or move an existing GitHub project with its issues and pull requests.</p><div><Link href="/import" className="button button-primary">Import GitHub project</Link><Link href="/new" className="button button-quiet">Create empty repository</Link></div></div>}
+          ))}</div> : <div className="dashboard-empty"><GitBranch /><h3>Your forge is ready</h3><p>Create a repository or move an existing GitHub project with its issues and pull requests.</p><div><Link href="/import" className="button button-primary">Import GitHub project</Link><Link href="/new" className="button button-quiet">Create empty repository</Link></div></div>}
         </section>
-        <aside className="panel pulse-sidebar"><div className="panel-heading"><div><h2>Activity pulse</h2><span>Across your forge</span></div><Radio size={17} /></div><div className="quiet-pulse"><i /><i /><i /><i /><i /><i /><i /></div><p>Repository activity will appear here as people and agents begin working.</p><div className="tip-card"><Bot size={19} /><div><b>Agents need boundaries</b><span>Origin asks for a plan and evidence before code reaches a merge decision.</span></div></div></aside>
+        <aside className="panel pulse-sidebar">
+          <div className="panel-heading"><div><h2>Activity</h2><span>Across your forge</span></div><Radio size={15} /></div>
+          {activity.length ? <div className="activity-list dashboard-activity">{activity.map(({ event, organizationSlug, repositorySlug }) => (
+            <div key={event.id}><span className={`event-dot ${event.actorType}`} /> <p><b>{event.actorName}</b>{event.title}<small>{organizationSlug}/{repositorySlug} · {event.createdAt.toLocaleString()}</small></p></div>
+          ))}</div> : <p className="pulse-empty">Repository activity will appear here as people and agents begin working.</p>}
+        </aside>
       </div>
     </main>
   );

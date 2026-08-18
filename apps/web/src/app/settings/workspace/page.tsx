@@ -20,7 +20,7 @@ export default async function WorkspaceSettingsPage() {
   const budgetPercent = settings.aiTokenBudget ? Math.min(Math.round((tokensUsed / settings.aiTokenBudget) * 100), 100) : 0;
   return <main className="settings-page shell-narrow">
     <nav className="settings-nav"><Link href="/settings/tokens">Tokens</Link><Link href="/settings/ssh">SSH keys</Link><Link href="/settings/runners">Runners</Link><Link className="active" href="/settings/workspace">Workspace</Link></nav>
-    <div className="flow-heading"><p className="eyebrow-simple">{organization.name.toUpperCase()}</p><h1>Workspace controls</h1><p>Billing plan, model budgets, data region, identity, and the audit trail for this workspace.</p></div>
+    <div className="flow-heading"><h1>Workspace controls</h1><p>Billing plan, model budgets, data region, identity, and the audit trail for this workspace.</p></div>
 
     <section className="panel settings-section">
       <div><h2><CreditCard size={17} /> Billing &amp; budgets</h2><p>The community edition meters usage locally. Origin Cloud attaches invoicing to the same plan and budget records — capabilities are never removed from the open core.</p></div>

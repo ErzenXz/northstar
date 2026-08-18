@@ -4,26 +4,32 @@ import { importGitHubAction } from "@/app/actions";
 import { requireUser } from "@/lib/auth";
 import { getUserOrganizations } from "@/lib/data";
 
-export const metadata = { title: "Move a GitHub project" };
+export const metadata = { title: "Import from GitHub" };
+
+const includes = ["Commits, branches, and tags", "Open and closed issues", "Issue and review comments", "Pull-request records", "Releases and assets", "Labels and milestones", "The project wiki", "An automatic repository map"];
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const user = await requireUser();
   const organizations = await getUserOrganizations(user.id);
   const { error } = await searchParams;
   return (
-    <main className="flow-page shell-narrow">
-      <Link href="/" className="back-link"><ArrowLeft size={16} /> Back to your forge</Link>
-      <div className="flow-heading"><div className="flow-icon import-icon"><CloudDownload /></div><p className="eyebrow-simple">ONE-STEP MIGRATION</p><h1>Bring the whole project.</h1><p>Origin mirrors the complete Git history, then moves issues and pull-request records into your forge.</p></div>
-      <div className="import-grid">
-        <form action={importGitHubAction} className="flow-form panel">
-          {error && <div className="form-error">{error}</div>}
-          <label>GitHub repository URL<div className="input-with-icon"><Github size={18} /><input name="sourceUrl" type="url" required autoFocus placeholder="https://github.com/acme/northstar" /></div></label>
-          <label>Move into<select name="organizationId">{organizations.map((org) => <option value={org.id} key={org.id}>{org.slug}</option>)}</select></label>
-          <label>GitHub token <span>required for private repositories, recommended for complete public imports</span><div className="input-with-icon"><LockKeyhole size={17} /><input name="token" type="password" autoComplete="off" placeholder="github_pat_…" /></div><small className="field-help">Encrypted before it enters the import queue and never stored as a reusable connection. Without one, GitHub may rate-limit issue and change history.</small></label>
-          <button className="button button-primary button-wide">Move this project <CloudDownload size={17} /></button>
-        </form>
-        <aside className="migration-list"><h2>What comes with you</h2><ul><li><Check />All commits and branches</li><li><Check />Tags and complete history</li><li><Check />Open and closed issues</li><li><Check />Pull-request records</li><li><Check />Labels and source links</li><li><Check />Automatic repository map</li></ul><p>The first alpha leaves GitHub comments and release assets linked at their original source. Native migration for those objects is the next importer milestone.</p></aside>
-      </div>
+    <main className="flow-page">
+      <Link href="/" className="back-link"><ArrowLeft size={15} /> Back</Link>
+      <div className="flow-heading"><h1>Import from GitHub</h1><p>Origin mirrors the full Git history, then moves the project&apos;s issues, changes, releases, and wiki into your forge.</p></div>
+      {error && <div className="form-error">{error}</div>}
+      <form action={importGitHubAction} className="flow-form panel">
+        <label>Repository URL<div className="input-with-icon"><Github size={16} /><input name="sourceUrl" type="url" required autoFocus placeholder="https://github.com/acme/northstar" /></div></label>
+        <div className="form-row">
+          <label>Import into<select name="organizationId">{organizations.map((org) => <option value={org.id} key={org.id}>{org.slug}</option>)}</select></label>
+          <label>Access token <span>Needed for private repositories</span><div className="input-with-icon"><LockKeyhole size={15} /><input name="token" type="password" autoComplete="off" placeholder="github_pat_…" /></div></label>
+        </div>
+        <p className="field-help">The token is encrypted before it enters the import queue and never stored as a reusable connection. Without one, GitHub may rate-limit issue and change history on public repositories.</p>
+        <div className="form-footer"><p>Imports run in the background — you can keep working.</p><button className="button button-primary"><CloudDownload size={15} /> Import repository</button></div>
+      </form>
+      <section className="include-list">
+        <h2>What moves with the project</h2>
+        <ul>{includes.map((item) => <li key={item}><Check size={13} /> {item}</li>)}</ul>
+      </section>
     </main>
   );
 }

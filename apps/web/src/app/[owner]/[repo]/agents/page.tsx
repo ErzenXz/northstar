@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bot, Check, CircleAlert, CircleDashed, FileDiff, FlaskConical, GitPullRequest, History, Play, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
+import { Check, CircleAlert, CircleDashed, FileDiff, FlaskConical, GitPullRequest, History, Play, ShieldCheck, Sparkles, Undo2 } from "lucide-react";
 import { approveAgentRunAction, createAgentRunAction, rollbackAgentRunAction } from "@/app/actions";
 import { EmptyState } from "@/components/empty-state";
 import { RepoShell } from "@/components/repo-shell";
@@ -31,24 +31,17 @@ export default async function AgentsPage({ params }: { params: Promise<{ owner: 
   const openIncidents = incidentRows.filter((incident) => incident.status === "open");
   const base = `/${owner}/${repo}`;
   return <RepoShell organization={row.organization} repository={row.repository} active="agents">
-    <div className="agent-hero panel">
-      <div>
-        <p className="eyebrow-simple">OBJECTIVE → SANDBOX → EVIDENCE → HUMAN MERGE</p>
-        <h1>Give the repository a job.</h1>
-        <p>Origin plans first. Execution runs in a disposable, network-controlled sandbox, publishes to an agent branch with patch and test evidence, passes an independent review agent, and still ends at a human merge decision.</p>
-        <form action={createAgentRunAction}>
-          <input type="hidden" name="repositoryId" value={row.repository.id} />
-          <textarea name="objective" required minLength={10} rows={3} placeholder="Describe the outcome. Example: Add offline project sync and prove it survives an app restart." />
-          <div><span><ShieldCheck size={15} /> Planning is safe and read-only</span><button className="button button-primary">Plan objective <Sparkles size={16} /></button></div>
-        </form>
-      </div>
-      <div className="agent-orbit" aria-hidden="true"><span><Bot /></span><i /><i /><i /><b>HUMAN<br />DECISION</b></div>
-    </div>
+    <div className="section-heading"><div><h1>Agents</h1><p>Objectives run in disposable sandboxes, carry evidence, pass independent review, and end at a human merge decision.</p></div></div>
+    <form action={createAgentRunAction} className="objective-composer panel">
+      <input type="hidden" name="repositoryId" value={row.repository.id} />
+      <textarea name="objective" required minLength={10} rows={3} placeholder="Describe the outcome. Example: Add offline project sync and prove it survives an app restart." />
+      <div><span><ShieldCheck size={14} /> Planning is read-only — execution waits for your approval</span><button className="button button-primary"><Sparkles size={14} /> Plan objective</button></div>
+    </form>
     {openIncidents.length > 0 && <div className="incident-banner panel">
       <CircleAlert size={17} />
       <div><b>{openIncidents.length} open incident{openIncidents.length > 1 ? "s" : ""}</b><span>{openIncidents[0]!.title}{openIncidents.length > 1 ? " and more." : "."} Review and resolve in <Link href={`${base}/settings/incidents`}>the incident trail</Link>.</span></div>
     </div>}
-    <div className="section-heading compact"><div><p className="eyebrow-simple">RUN HISTORY</p><h2>Objectives</h2></div><span>{runs.length} runs</span></div>
+    <div className="section-heading compact"><div><h2>Objectives</h2></div><span>{runs.length} runs</span></div>
     {runs.length ? <section className="runs-list">
       {runs.map((run) => <article className="panel run-card" key={run.id}>
         <div className={`run-status ${run.status}`}>{run.status === "executed" ? <Check /> : run.status === "blocked" || run.status === "failed" ? <CircleAlert /> : <CircleDashed />}</div>

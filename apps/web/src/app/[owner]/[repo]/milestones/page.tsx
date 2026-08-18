@@ -27,7 +27,7 @@ export default async function MilestonesPage({ params, searchParams }: {
   return <RepoShell organization={row.organization} repository={row.repository} active="issues">
     <div className="section-heading">
       <div>
-        <p className="eyebrow-simple">DELIVERY TARGETS</p>
+        
         <h1>Milestones</h1>
         <p>Group issues into outcomes with a due date, and watch the work burn down.</p>
       </div>

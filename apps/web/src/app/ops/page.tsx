@@ -27,7 +27,7 @@ export default async function OpsPage() {
   const failedJobs = jobRows.filter((job) => job.status === "failed");
   return <main className="ops-page shell">
     <div className="section-heading">
-      <div><p className="eyebrow-simple">INSTANCE OPERATIONS</p><h1>Operations console</h1><p>Queue health, storage replication, incidents, and abuse controls for this Origin installation.</p></div>
+      <div><h1>Operations console</h1><p>Queue health, storage replication, incidents, and abuse controls for this Origin installation.</p></div>
       <form action={runBackupSweepAction}><button className="button button-primary"><HardDriveDownload size={15} /> Run backup sweep</button></form>
     </div>
     <section className="ops-stats">

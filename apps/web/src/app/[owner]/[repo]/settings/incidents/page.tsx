@@ -15,7 +15,7 @@ export default async function IncidentsPage({ params }: { params: Promise<{ owne
   const rows = await getRepositoryIncidents(row.repository.id);
   return <RepoShell organization={row.organization} repository={row.repository} active="settings">
     <nav className="subnav"><Link href={`/${owner}/${repo}/settings/hooks`}>Webhooks</Link><Link href={`/${owner}/${repo}/settings/keys`}>Deploy keys</Link><Link href={`/${owner}/${repo}/settings/policies`}>Policy gates</Link><Link className="active" href={`/${owner}/${repo}/settings/incidents`}>Incidents</Link></nav>
-    <div className="section-heading"><div><p className="eyebrow-simple">ACCOUNTABILITY TRAIL</p><h1>Incidents</h1><p>Failed executions, review blocks, and rollbacks are recorded here until a person resolves them.</p></div></div>
+    <div className="section-heading"><div><h1>Incidents</h1><p>Failed executions, review blocks, and rollbacks are recorded here until a person resolves them.</p></div></div>
     {rows.length ? <section className="incident-list">
       {rows.map((incident) => <article className={`panel incident-card ${incident.status}`} key={incident.id}>
         {incident.status === "open" ? <CircleAlert /> : <Check />}

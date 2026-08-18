@@ -36,7 +36,7 @@ export default async function IssuesPage({ params, searchParams }: {
   return <RepoShell organization={row.organization} repository={row.repository} active="issues">
     <div className="section-heading">
       <div>
-        <p className="eyebrow-simple">WORK TO BE DONE</p>
+        
         <h1>Issues</h1>
         <p>Problems, ideas, and outcomes with their full working conversation.</p>
       </div>

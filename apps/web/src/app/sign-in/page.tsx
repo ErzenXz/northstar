@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, KeyRound } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { signInAction } from "@/app/actions";
 import { Logo } from "@/components/logo";
 
@@ -11,8 +11,6 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <main className="auth-page">
       <section className="auth-card">
         <Logo />
-        <div className="auth-icon"><KeyRound /></div>
-        <p className="eyebrow-simple">RETURN TO YOUR FORGE</p>
         <h1>Sign in to Origin</h1>
         <p className="auth-lede">Continue where your team and agents left off.</p>
         {error && <div className="form-error">{error}</div>}

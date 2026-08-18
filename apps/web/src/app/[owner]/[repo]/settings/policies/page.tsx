@@ -14,7 +14,7 @@ export default async function PoliciesPage({ params }: { params: Promise<{ owner
   const gates = await getRepositoryPolicyGates(row.repository.id);
   return <RepoShell organization={row.organization} repository={row.repository} active="settings">
     <nav className="subnav"><Link href={`/${owner}/${repo}/settings/hooks`}>Webhooks</Link><Link href={`/${owner}/${repo}/settings/keys`}>Deploy keys</Link><Link className="active" href={`/${owner}/${repo}/settings/policies`}>Policy gates</Link><Link href={`/${owner}/${repo}/settings/incidents`}>Incidents</Link></nav>
-    <div className="section-heading"><div><p className="eyebrow-simple">AGENT BOUNDARIES</p><h1>Policy gates</h1><p>Every agent execution in this repository runs against these gates. Human approval before execution and before merge can never be disabled.</p></div></div>
+    <div className="section-heading"><div><h1>Policy gates</h1><p>Every agent execution in this repository runs against these gates. Human approval before execution and before merge can never be disabled.</p></div></div>
     <section className="panel settings-section">
       <div><h2>Execution policy</h2><p>Applied inside the disposable sandbox and by the independent review agent before a change can be merged.</p></div>
       <form action={updatePolicyGatesAction} className="form-stack">

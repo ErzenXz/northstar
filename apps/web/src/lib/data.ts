@@ -79,6 +79,18 @@ export async function getUserRepositories(userId: string) {
     .orderBy(desc(repositories.updatedAt));
 }
 
+export async function getForgeActivity(userId: string, limit = 10) {
+  return getDb()
+    .select({ event: activityEvents, repositorySlug: repositories.slug, organizationSlug: organizations.slug })
+    .from(activityEvents)
+    .innerJoin(repositories, eq(repositories.id, activityEvents.repositoryId))
+    .innerJoin(organizations, eq(organizations.id, repositories.organizationId))
+    .innerJoin(organizationMembers, eq(organizationMembers.organizationId, organizations.id))
+    .where(eq(organizationMembers.userId, userId))
+    .orderBy(desc(activityEvents.createdAt))
+    .limit(limit);
+}
+
 export async function getRepositoryOverview(repositoryId: string) {
   const [events, openIssues, openPulls, runs] = await Promise.all([
     getDb().select().from(activityEvents).where(eq(activityEvents.repositoryId, repositoryId)).orderBy(desc(activityEvents.createdAt)).limit(12),

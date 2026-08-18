@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { signUpAction } from "@/app/actions";
 import { Logo } from "@/components/logo";
 
@@ -11,8 +11,6 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
     <main className="auth-page">
       <section className="auth-card">
         <Logo />
-        <div className="auth-icon"><Boxes /></div>
-        <p className="eyebrow-simple">YOUR SOFTWARE HOME</p>
         <h1>Create your forge</h1>
         <p className="auth-lede">Start open. Import later. Keep every exit available.</p>
         {error && <div className="form-error">{error}</div>}
