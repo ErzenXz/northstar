@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /settings/
+Disallow: /ops
+Disallow: /api/
