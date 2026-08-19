@@ -43,6 +43,13 @@
       "when": 1787092675472,
       "tag": "0005_violet_sway",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787128825836,
+      "tag": "0006_first_goliath",
+      "breakpoints": true
     }
   ]
 }

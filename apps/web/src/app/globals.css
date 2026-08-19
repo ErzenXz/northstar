@@ -132,6 +132,16 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; }
 .hero-lede { max-width: 560px; margin: 0; color: var(--muted); font-size: 17px; line-height: 1.65; }
 .hero-actions { margin-top: 32px; display: flex; gap: 10px; }
 .hero-actions .button { min-height: 40px; padding-inline: 18px; font-size: 14px; }
+.hero-actions.secondary { margin-top: 14px; }
+.hero-actions.secondary .button { min-height: 34px; font-size: 13px; color: var(--muted); }
+.hero-actions.secondary .button:hover { color: var(--ink); }
+.waitlist-form { margin-top: 30px; display: flex; gap: 9px; max-width: 460px; }
+.waitlist-form input { flex: 1; min-height: 40px; }
+.waitlist-form .button { min-height: 40px; padding-inline: 16px; white-space: nowrap; }
+.waitlist-done { margin-top: 30px; max-width: 460px; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start; border: 1px solid rgba(76, 183, 130, .35); background: var(--green-soft); border-radius: var(--radius); }
+.waitlist-done svg { color: var(--green); flex: 0 0 auto; margin-top: 2px; }
+.waitlist-done b { display: block; font-size: 13.5px; }
+.waitlist-done span { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; }
 .hero-proof { margin-top: 26px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; color: var(--faint); font-size: 12.5px; font-weight: 500; }
 .hero-proof svg { color: var(--green); }
 .pulse-card { position: relative; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
@@ -712,7 +722,7 @@ input[type="checkbox"] { width: 15px; min-height: 15px; accent-color: var(--acce
 
 /* ---------- ops console ---------- */
 .ops-page { padding-block: 40px 90px; }
-.ops-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+.ops-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; }
 .ops-stats > div { padding: 16px; display: flex; flex-direction: column; gap: 3px; }
 .ops-stats svg { width: 15px; color: var(--accent-ink); margin-bottom: 6px; }
 .ops-stats b { font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
@@ -766,7 +776,7 @@ input[type="checkbox"] { width: 15px; min-height: 15px; accent-color: var(--acce
   .hero { padding-block: 46px 64px; }
   .hero h1 { font-size: 36px; }
   .hero-lede { font-size: 15px; }
-  .hero-actions, .hero-proof { align-items: stretch; flex-direction: column; }
+  .hero-actions, .hero-proof, .waitlist-form { align-items: stretch; flex-direction: column; }
   .pulse-repo { align-items: flex-start; flex-direction: column; gap: 6px; }
   .thesis { padding-block: 60px; }
   .thesis h2, .edition-section h2 { font-size: 28px; }

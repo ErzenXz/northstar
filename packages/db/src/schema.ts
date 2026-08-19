@@ -555,6 +555,18 @@ export const usageRecords = pgTable(
   (table) => [index("usage_records_org_period_idx").on(table.organizationId, table.period, table.kind)],
 );
 
+export const waitlistSignups = pgTable(
+  "waitlist_signups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull().unique(),
+    source: text("source").notNull().default("homepage"),
+    invitedAt: timestamp("invited_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("waitlist_created_idx").on(table.createdAt)],
+);
+
 export const auditEvents = pgTable(
   "audit_events",
   {

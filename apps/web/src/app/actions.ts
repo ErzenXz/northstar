@@ -34,10 +34,12 @@ import {
   runners,
   sshKeys,
   users,
+  waitlistSignups,
   webhooks,
 } from "@northstar/db";
 import { compareBranches, createBareRepository, createBranch, getRefSha, mergeBranches } from "@northstar/git";
 import { createSession, destroySession, requireUser } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
 import { repositoryRoot } from "@/lib/repository";
 
 function value(formData: FormData, key: string) {
@@ -591,4 +593,17 @@ export async function runBackupSweepAction() {
   if (!user.admin) throw new Error("Only instance operators can run backup sweeps");
   await getDb().insert(jobs).values({ type: "backup-repositories", payload: { requestedBy: user.username } });
   revalidatePath("/ops");
+}
+
+export async function joinWaitlistAction(formData: FormData) {
+  await enforceRateLimit("waitlist", 6, 60_000).catch(() => fail("/", "Too many attempts. Wait a minute and try again."));
+  const email = value(formData, "email").toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email) || email.length > 254) fail("/", "Enter a valid email address.");
+  await getDb().insert(waitlistSignups).values({ email }).onConflictDoNothing();
+  await sendEmail({
+    to: email,
+    subject: "You're on the Northstar waitlist",
+    text: "Thanks for your interest in Northstar Cloud. We're inviting people in waves — you'll hear from us when your spot opens. Until then, the community edition is a one-command install: https://github.com/ErzenXz/northstar",
+  }).catch(() => undefined);
+  redirect("/?waitlist=joined");
 }

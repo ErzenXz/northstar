@@ -1,19 +1,28 @@
 import Link from "next/link";
 import { ArrowRight, Bot, BrainCircuit, Check, CloudDownload, Code2, GitBranch, GitPullRequest, Radio, ShieldCheck, Sparkles } from "lucide-react";
+import { joinWaitlistAction } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getForgeActivity, getUserRepositories } from "@/lib/data";
 
-function MarketingHome() {
+function MarketingHome({ waitlistJoined }: { waitlistJoined: boolean }) {
   return (
     <main>
       <section className="hero shell">
         <div className="hero-copy">
           <div className="eyebrow"><span>Open source · AGPL-3.0</span><i /> Built for human + agent teams</div>
           <h1>Your codebase should<br /><em>understand the work.</em></h1>
-          <p className="hero-lede">Northstar is a complete Git forge where repositories hold code, decisions, agents, and proof. Self-host it. Use our cloud. Leave whenever you want.</p>
-          <div className="hero-actions">
-            <Link href="/sign-up" className="button button-primary">Start your forge <ArrowRight size={17} /></Link>
-            <Link href="/import" className="button button-quiet"><CloudDownload size={17} /> Import from GitHub</Link>
+          <p className="hero-lede">Northstar is a complete Git forge where repositories hold code, decisions, agents, and proof. Self-host it today, or join the waitlist for Northstar Cloud.</p>
+          {waitlistJoined ? (
+            <div className="waitlist-done"><Check size={16} /> <div><b>You&apos;re on the list.</b><span>We invite people in waves — you&apos;ll hear from us when your spot opens.</span></div></div>
+          ) : (
+            <form action={joinWaitlistAction} className="waitlist-form">
+              <input type="email" name="email" required placeholder="you@company.com" aria-label="Email address" />
+              <button className="button button-primary">Join the cloud waitlist <ArrowRight size={15} /></button>
+            </form>
+          )}
+          <div className="hero-actions secondary">
+            <Link href="/sign-up" className="button button-quiet">Start a self-hosted forge <ArrowRight size={15} /></Link>
+            <a href="https://github.com/ErzenXz/northstar" className="button button-quiet"><CloudDownload size={15} /> One-command install</a>
           </div>
           <div className="hero-proof"><Check size={15} /> Clone and push with Git <Check size={15} /> Bring issues and changes <Check size={15} /> Use your own models</div>
         </div>
@@ -79,7 +88,7 @@ async function Dashboard({ user }: { user: NonNullable<Awaited<ReturnType<typeof
   );
 }
 
-export default async function HomePage() {
-  const user = await getCurrentUser();
-  return user ? <Dashboard user={user} /> : <MarketingHome />;
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ waitlist?: string; error?: string }> }) {
+  const [user, query] = await Promise.all([getCurrentUser(), searchParams]);
+  return user ? <Dashboard user={user} /> : <MarketingHome waitlistJoined={query.waitlist === "joined"} />;
 }

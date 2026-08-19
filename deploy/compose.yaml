@@ -1,0 +1,107 @@
+name: northstar
+
+# Production compose using prebuilt images from GHCR — no local build needed.
+# Install with the one-command installer, or copy this file and a .env with
+# NORTHSTAR_ENCRYPTION_KEY, SESSION_SECRET, and POSTGRES_PASSWORD set.
+
+x-northstar-env: &northstar-env
+  DATABASE_URL: postgresql://northstar:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/northstar
+  NORTHSTAR_REPOSITORY_ROOT: /var/lib/northstar/repositories
+  NORTHSTAR_ASSET_ROOT: /var/lib/northstar/assets
+  NORTHSTAR_SANDBOX_ROOT: /var/lib/northstar/sandboxes
+  NORTHSTAR_BACKUP_ROOT: /var/lib/northstar/backups
+  NORTHSTAR_BASE_URL: ${NORTHSTAR_BASE_URL:-http://localhost:3000}
+  NORTHSTAR_GIT_URL: ${NORTHSTAR_GIT_URL:-http://localhost:4000}
+  NORTHSTAR_SSH_URL: ${NORTHSTAR_SSH_URL:-ssh://git@localhost:2222}
+  NORTHSTAR_EDITION: community
+  NORTHSTAR_ENCRYPTION_KEY: ${NORTHSTAR_ENCRYPTION_KEY:?set NORTHSTAR_ENCRYPTION_KEY in .env}
+  SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+  AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:-}
+  AI_MODEL: ${AI_MODEL:-openai/gpt-5.6-terra}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: northstar
+      POSTGRES_USER: northstar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - northstar-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U northstar -d northstar"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    image: ghcr.io/erzenxz/northstar-migrate:${NORTHSTAR_VERSION:-latest}
+    environment: *northstar-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: ghcr.io/erzenxz/northstar-web:${NORTHSTAR_VERSION:-latest}
+    environment: *northstar-env
+    ports:
+      - "${NORTHSTAR_WEB_PORT:-3000}:3000"
+    volumes:
+      - northstar-repositories:/var/lib/northstar/repositories
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  git:
+    image: ghcr.io/erzenxz/northstar-git:${NORTHSTAR_VERSION:-latest}
+    environment:
+      <<: *northstar-env
+      GIT_PORT: 4000
+      GIT_HOST: 0.0.0.0
+    ports:
+      - "${NORTHSTAR_GIT_PORT:-4000}:4000"
+    volumes:
+      - northstar-repositories:/var/lib/northstar/repositories
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  ssh:
+    image: ghcr.io/erzenxz/northstar-ssh:${NORTHSTAR_VERSION:-latest}
+    environment:
+      <<: *northstar-env
+      NORTHSTAR_SSH_HOST: 0.0.0.0
+      NORTHSTAR_SSH_PORT: 2222
+      NORTHSTAR_SSH_HOST_KEY: /var/lib/northstar/ssh/host-key.pem
+    ports:
+      - "${NORTHSTAR_SSH_PORT:-2222}:2222"
+    volumes:
+      - northstar-repositories:/var/lib/northstar/repositories
+      - northstar-ssh:/var/lib/northstar/ssh
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/erzenxz/northstar-worker:${NORTHSTAR_VERSION:-latest}
+    environment: *northstar-env
+    volumes:
+      - northstar-repositories:/var/lib/northstar/repositories
+      - northstar-assets:/var/lib/northstar/assets
+      - northstar-backups:/var/lib/northstar/backups
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  northstar-postgres:
+  northstar-repositories:
+  northstar-assets:
+  northstar-backups:
+  northstar-ssh:

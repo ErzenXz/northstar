@@ -1,6 +1,6 @@
 import { Archive, CircleAlert, Cpu, Database, HardDriveDownload, ListChecks, Radio, Users } from "lucide-react";
 import { desc, eq, sql } from "drizzle-orm";
-import { backups, getDb, incidents, jobs, organizations, repositories, runners, usageRecords, users } from "@northstar/db";
+import { backups, getDb, incidents, jobs, organizations, repositories, runners, usageRecords, users, waitlistSignups } from "@northstar/db";
 import { usagePeriod } from "@northstar/core";
 import { runBackupSweepAction } from "@/app/actions";
 import { requireAdmin } from "@/lib/auth";
@@ -16,6 +16,7 @@ export default async function OpsPage() {
       users: sql<string>`(select count(*) from ${users})`,
       organizations: sql<string>`(select count(*) from ${organizations})`,
       repositories: sql<string>`(select count(*) from ${repositories})`,
+      waitlist: sql<string>`(select count(*) from ${waitlistSignups})`,
     }).from(sql`(select 1) as one`),
     getDb().select().from(jobs).orderBy(desc(jobs.createdAt)).limit(25),
     getDb().select({ backup: backups, storageKey: repositories.storageKey }).from(backups).innerJoin(repositories, eq(repositories.id, backups.repositoryId)).orderBy(desc(backups.createdAt)).limit(25),
@@ -36,6 +37,7 @@ export default async function OpsPage() {
       <div className="panel"><Archive size={16} /><b>{stats.repositories}</b><span>repositories</span></div>
       <div className="panel"><Cpu size={16} /><b>{Number(tokenUsage[0]?.total ?? 0).toLocaleString()}</b><span>model tokens · {period}</span></div>
       <div className="panel"><CircleAlert size={16} /><b>{incidentRows.length}</b><span>open incidents</span></div>
+      <div className="panel"><Users size={16} /><b>{stats.waitlist}</b><span>waitlist signups</span></div>
     </section>
     <div className="ops-grid">
       <section className="panel ops-table">

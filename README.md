@@ -46,6 +46,15 @@ run the same open core.
 
 ## Quick start
 
+One command on any machine with Docker:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ErzenXz/northstar/main/deploy/install.sh | sh
+```
+
+The installer generates secrets, pulls prebuilt images from GHCR, and starts
+the forge at `http://localhost:3000`. Prefer to build from source instead?
+
 ```bash
 git clone https://github.com/ErzenXz/northstar.git
 cd northstar
