@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { getDb, organizationSettings, organizations, type User } from "@origin/db";
+import { getDb, organizationSettings, organizations, type User } from "@northstar/db";
 
 export async function authenticateScim(request: Request) {
   const authorization = request.headers.get("authorization");

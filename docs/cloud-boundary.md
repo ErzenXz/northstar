@@ -1,6 +1,6 @@
-# Origin Cloud boundary
+# Northstar Cloud boundary
 
-Origin Cloud should be the easiest way to operate Origin, not the only way to
+Northstar Cloud should be the easiest way to operate Northstar, not the only way to
 use its product capabilities.
 
 Cloud modules may include:

@@ -13,12 +13,12 @@ export default async function NewRepositoryPage({ searchParams }: { searchParams
   return (
     <main className="flow-page">
       <Link href="/" className="back-link"><ArrowLeft size={15} /> Back</Link>
-      <div className="flow-heading"><h1>New repository</h1><p>Create a Git home for a project. Origin builds its repository brain after the first push.</p></div>
+      <div className="flow-heading"><h1>New repository</h1><p>Create a Git home for a project. Northstar builds its repository brain after the first push.</p></div>
       {error && <div className="form-error">{error}</div>}
       <form action={createRepositoryAction} className="flow-form panel">
         <div className="form-row">
           <label>Workspace<select name="organizationId">{organizations.map((org) => <option value={org.id} key={org.id}>{org.slug}</option>)}</select></label>
-          <label>Repository name<input name="name" required autoFocus placeholder="northstar" /></label>
+          <label>Repository name<input name="name" required autoFocus placeholder="aurora" /></label>
         </div>
         <label>Description <span>Optional</span><input name="description" placeholder="What are you building?" /></label>
         <fieldset>

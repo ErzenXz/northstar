@@ -1,5 +1,5 @@
 {
-  "name": "@origin/web",
+  "name": "@northstar/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,9 +11,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@origin/core": "workspace:*",
-    "@origin/db": "workspace:*",
-    "@origin/git": "workspace:*",
+    "@northstar/core": "workspace:*",
+    "@northstar/db": "workspace:*",
+    "@northstar/git": "workspace:*",
     "argon2": "0.44.0",
     "drizzle-orm": "catalog:",
     "lucide-react": "0.542.0",

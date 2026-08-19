@@ -4,4 +4,4 @@ import { closeDb, getDb } from "./index";
 
 await migrate(getDb(), { migrationsFolder: "./drizzle" });
 await closeDb();
-console.log("Origin database is up to date.");
+console.log("Northstar database is up to date.");

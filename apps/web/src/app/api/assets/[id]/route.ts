@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { and, eq } from "drizzle-orm";
-import { getDb, organizationMembers, releaseAssets, releases, repositories } from "@origin/db";
+import { getDb, organizationMembers, releaseAssets, releases, repositories } from "@northstar/db";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {

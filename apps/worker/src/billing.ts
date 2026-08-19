@@ -1,5 +1,5 @@
-import { usagePeriod } from "@origin/core";
-import { getDb, organizationSettings, usageRecords } from "@origin/db";
+import { usagePeriod } from "@northstar/core";
+import { getDb, organizationSettings, usageRecords } from "@northstar/db";
 import { and, eq, sql } from "drizzle-orm";
 
 export async function ensureOrganizationSettings(organizationId: string) {

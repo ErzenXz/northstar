@@ -469,7 +469,7 @@ export const agentReviews = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     agentRunId: uuid("agent_run_id").notNull().references(() => agentRuns.id, { onDelete: "cascade" }),
-    reviewer: text("reviewer").notNull().default("origin-review-agent"),
+    reviewer: text("reviewer").notNull().default("northstar-review-agent"),
     verdict: text("verdict").notNull(),
     summary: text("summary").notNull().default(""),
     concerns: jsonb("concerns").$type<string[]>().notNull().default([]),
@@ -486,7 +486,7 @@ export const policyGates = pgTable("policy_gates", {
   requirePassingChecks: boolean("require_passing_checks").notNull().default(true),
   allowNetwork: boolean("allow_network").notNull().default(false),
   runTests: boolean("run_tests").notNull().default(true),
-  blockedPaths: jsonb("blocked_paths").$type<string[]>().notNull().default([".git/", ".origin/policies"]),
+  blockedPaths: jsonb("blocked_paths").$type<string[]>().notNull().default([".git/", ".northstar/policies"]),
   maxChangedFiles: integer("max_changed_files").notNull().default(25),
   ...timestamps,
 });

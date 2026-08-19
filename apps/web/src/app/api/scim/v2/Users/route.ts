@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { hash } from "argon2";
 import { and, eq } from "drizzle-orm";
-import { slugify } from "@origin/core";
-import { auditEvents, getDb, organizationMembers, users } from "@origin/db";
+import { slugify } from "@northstar/core";
+import { auditEvents, getDb, organizationMembers, users } from "@northstar/db";
 import { authenticateScim, scimError, scimUser } from "@/lib/scim";
 
 export async function GET(request: Request) {

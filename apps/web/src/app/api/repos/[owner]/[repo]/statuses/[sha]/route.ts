@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { commitStatuses, getDb, jobs, organizationMembers, organizations, repositories } from "@origin/db";
+import { commitStatuses, getDb, jobs, organizationMembers, organizations, repositories } from "@northstar/db";
 import { getAccessTokenUser } from "@/lib/auth";
 import { getRepository } from "@/lib/data";
 
@@ -15,7 +15,7 @@ export async function GET(_request: Request, context: { params: Promise<{ owner:
 
 export async function POST(request: Request, context: { params: Promise<{ owner: string; repo: string; sha: string }> }) {
   const user = await getAccessTokenUser(request);
-  if (!user) return Response.json({ error: "A valid Origin access token is required" }, { status: 401 });
+  if (!user) return Response.json({ error: "A valid Northstar access token is required" }, { status: 401 });
   const { owner, repo, sha } = await context.params;
   if (!/^[a-f0-9]{7,64}$/i.test(sha)) return Response.json({ error: "Commit SHA is invalid" }, { status: 400 });
   const [row] = await getDb().select({ repository: repositories, organization: organizations }).from(repositories).innerJoin(organizations, eq(organizations.id, repositories.organizationId)).innerJoin(organizationMembers, eq(organizationMembers.organizationId, organizations.id)).where(and(eq(organizations.slug, owner), eq(repositories.slug, repo), eq(organizationMembers.userId, user.id))).limit(1);

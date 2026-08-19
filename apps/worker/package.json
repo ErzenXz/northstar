@@ -1,5 +1,5 @@
 {
-  "name": "@origin/worker",
+  "name": "@northstar/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@octokit/rest": "22.0.0",
-    "@origin/ai": "workspace:*",
-    "@origin/core": "workspace:*",
-    "@origin/db": "workspace:*",
-    "@origin/git": "workspace:*",
+    "@northstar/ai": "workspace:*",
+    "@northstar/core": "workspace:*",
+    "@northstar/db": "workspace:*",
+    "@northstar/git": "workspace:*",
     "dotenv": "17.2.2",
     "drizzle-orm": "catalog:"
   },

@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
-import { implementObjectiveChange, reviewAgentPatch } from "@origin/ai";
+import { implementObjectiveChange, reviewAgentPatch } from "@northstar/ai";
 import {
   activityEvents,
   agentReviews,
@@ -13,7 +13,7 @@ import {
   policyGates,
   pullRequests,
   repositories,
-} from "@origin/db";
+} from "@northstar/db";
 import {
   commitWorkspace,
   compareBranches,
@@ -21,12 +21,12 @@ import {
   listTree,
   pushWorkspaceBranch,
   workspaceDiff,
-} from "@origin/git";
+} from "@northstar/git";
 import { and, eq, max } from "drizzle-orm";
 import { assertAiBudget, chargeAiUsage } from "./billing";
 import { detectIsolation, runSandboxed } from "./sandbox";
 
-const AGENT_ACTOR = { name: "Origin Agent", email: "agent@origin.local" };
+const AGENT_ACTOR = { name: "Northstar Agent", email: "agent@northstar.local" };
 
 export async function ensurePolicyGates(repositoryId: string) {
   await getDb().insert(policyGates).values({ repositoryId }).onConflictDoNothing();
@@ -58,7 +58,7 @@ async function raiseIncident(repositoryId: string, agentRunId: string | null, ki
   await getDb().insert(activityEvents).values({
     repositoryId,
     actorType: "system",
-    actorName: "Origin sentinel",
+    actorName: "Northstar sentinel",
     type: "incident.opened",
     title,
     detail,
@@ -160,7 +160,7 @@ export async function executeAgentRun(payload: Record<string, unknown>, reposito
       number: pullNumber,
       title: change.commitMessage,
       body: `${change.summary}\n\nObjective: ${run.objective}\n\nThis change was produced in a disposable sandbox and carries evidence artifacts on agent run ${runId.slice(0, 8)}. Merge requires the independent review gate and a human approval.`,
-      authorName: "origin-agent",
+      authorName: "northstar-agent",
       headBranch: branch,
       baseBranch: repository.defaultBranch,
       headSha: comparison.headSha,
@@ -182,7 +182,7 @@ export async function executeAgentRun(payload: Record<string, unknown>, reposito
     await getDb().insert(activityEvents).values({
       repositoryId: repository.id,
       actorType: "agent",
-      actorName: "Origin builder",
+      actorName: "Northstar builder",
       type: "agent.executed",
       title: `Published change #${pullNumber} for review`,
       detail: `${diff.files.length} files changed on ${branch}. Independent review is queued.`,
@@ -225,10 +225,10 @@ export async function reviewAgentRun(payload: Record<string, unknown>, repositor
     await getDb().insert(commitStatuses).values({
       repositoryId: repository.id,
       sha: comparison.headSha,
-      context: "origin/review-agent",
+      context: "northstar/review-agent",
       state: review.verdict === "approve" ? "success" : "failure",
       description: review.summary.slice(0, 130),
-      creatorName: "origin-review-agent",
+      creatorName: "northstar-review-agent",
     });
   }
 
@@ -237,7 +237,7 @@ export async function reviewAgentRun(payload: Record<string, unknown>, repositor
     await getDb().insert(activityEvents).values({
       repositoryId: repository.id,
       actorType: "agent",
-      actorName: "Origin review agent",
+      actorName: "Northstar review agent",
       type: "agent.review_passed",
       title: `Independent review passed for change #${run.pullRequestNumber}`,
       detail: `${review.summary} A human approval is still required to merge.`,
@@ -251,7 +251,7 @@ export async function reviewAgentRun(payload: Record<string, unknown>, repositor
 
 export async function rollbackAgentRun(payload: Record<string, unknown>, repositoryRoot: string, sandboxRoot: string) {
   const runId = String(payload.runId);
-  const actorName = String(payload.actorName ?? "origin");
+  const actorName = String(payload.actorName ?? "northstar");
   const [run] = await getDb().select().from(agentRuns).where(eq(agentRuns.id, runId)).limit(1);
   if (!run) throw new Error("Agent run no longer exists");
   const [repository] = await getDb().select().from(repositories).where(eq(repositories.id, run.repositoryId)).limit(1);
@@ -260,7 +260,7 @@ export async function rollbackAgentRun(payload: Record<string, unknown>, reposit
   const [pull] = await getDb().select().from(pullRequests).where(and(eq(pullRequests.repositoryId, repository.id), eq(pullRequests.number, run.pullRequestNumber))).limit(1);
   if (!pull?.mergeCommitSha) throw new Error("The change is not merged, so there is nothing to roll back");
 
-  const { revertCommit } = await import("@origin/git");
+  const { revertCommit } = await import("@northstar/git");
   const revertSha = await revertCommit(repositoryRoot, repository.storageKey, pull.baseBranch, pull.mergeCommitSha, AGENT_ACTOR, sandboxRoot);
   await getDb().update(agentRuns).set({ status: "rolled_back", rolledBackAt: new Date(), updatedAt: new Date() }).where(eq(agentRuns.id, runId));
   await addEvidence(runId, "log", "Rollback executed", `Revert commit ${revertSha} restored ${pull.baseBranch} ahead of merge ${pull.mergeCommitSha}. Requested by ${actorName}.`);

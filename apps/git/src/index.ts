@@ -4,16 +4,16 @@ import { execFileSync, spawn } from "node:child_process";
 import { join, resolve } from "node:path";
 import Fastify from "fastify";
 import { and, eq } from "drizzle-orm";
-import { accessTokens, activityEvents, getDb, jobs, organizationMembers, organizationSettings, organizations, repositories, users } from "@origin/db";
-import { repositorySizeBytes, resolveRepositoryPath } from "@origin/git";
+import { accessTokens, activityEvents, getDb, jobs, organizationMembers, organizationSettings, organizations, repositories, users } from "@northstar/db";
+import { repositorySizeBytes, resolveRepositoryPath } from "@northstar/git";
 
 const app = Fastify({ logger: true, bodyLimit: 250 * 1024 * 1024 });
-const repositoryRoot = resolve(process.env.ORIGIN_REPOSITORY_ROOT ?? "../../data/repositories");
+const repositoryRoot = resolve(process.env.NORTHSTAR_REPOSITORY_ROOT ?? "../../data/repositories");
 const gitHttpBackend = join(execFileSync("git", ["--exec-path"], { encoding: "utf8" }).trim(), "git-http-backend");
 
 app.addContentTypeParser(/^application\/x-git-.*-request$/, { parseAs: "buffer" }, (_request, body, done) => done(null, body));
 
-app.get("/health", async () => ({ status: "ok", service: "origin-git" }));
+app.get("/health", async () => ({ status: "ok", service: "northstar-git" }));
 
 function bearerToken(authorization?: string) {
   if (!authorization) return null;
@@ -50,7 +50,7 @@ async function canAccess(organizationId: string, isPublic: boolean, authorizatio
 }
 
 app.all("/*", async (request, reply) => {
-  const requestPath = new URL(request.url, "http://origin.local").pathname;
+  const requestPath = new URL(request.url, "http://northstar.local").pathname;
   const match = requestPath.match(/^\/([a-z0-9-]+)\/([a-z0-9-]+)\.git\/(.+)$/);
   if (!match) return reply.code(404).send({ error: "Repository route not found" });
   const [, ownerSlug, repositorySlug, gitPath] = match;
@@ -72,7 +72,7 @@ app.all("/*", async (request, reply) => {
   const isReceiveOperation = request.method === "POST" && requestPath.endsWith("/git-receive-pack");
   const access = await canAccess(repository.organizationId, repository.visibility === "public", request.headers.authorization, service);
   if (!access.allowed) {
-    reply.header("WWW-Authenticate", 'Basic realm="Origin Git"');
+    reply.header("WWW-Authenticate", 'Basic realm="Northstar Git"');
     return reply.code(401).send("Authentication required\n");
   }
 

@@ -1,5 +1,5 @@
 {
-  "name": "origin",
+  "name": "northstar",
   "private": true,
   "packageManager": "pnpm@11.21.0",
   "engines": {
@@ -11,9 +11,9 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "db:generate": "turbo run db:generate --filter=@origin/db",
-    "db:migrate": "turbo run db:migrate --filter=@origin/db",
-    "db:seed": "turbo run db:seed --filter=@origin/db"
+    "db:generate": "turbo run db:generate --filter=@northstar/db",
+    "db:migrate": "turbo run db:migrate --filter=@northstar/db",
+    "db:seed": "turbo run db:seed --filter=@northstar/db"
   },
   "devDependencies": {
     "turbo": "2.10.10",

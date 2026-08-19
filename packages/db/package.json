@@ -1,5 +1,5 @@
 {
-  "name": "@origin/db",
+  "name": "@northstar/db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -25,8 +25,8 @@
     "db:seed": "tsx src/seed.ts"
   },
   "dependencies": {
-    "@origin/core": "workspace:*",
-    "@origin/git": "workspace:*",
+    "@northstar/core": "workspace:*",
+    "@northstar/git": "workspace:*",
     "argon2": "0.44.0",
     "dotenv": "17.2.2",
     "drizzle-orm": "catalog:",

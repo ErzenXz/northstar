@@ -5,7 +5,7 @@ import { hash, verify } from "argon2";
 import { and, desc, eq, max } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { assertDataRegion, encryptSecret, repositoryStorageKey, requiredEnv, slugify } from "@origin/core";
+import { assertDataRegion, encryptSecret, repositoryStorageKey, requiredEnv, slugify } from "@northstar/core";
 import { clientAddress, enforceRateLimit } from "@/lib/rate-limit";
 import {
   accessTokens,
@@ -35,8 +35,8 @@ import {
   sshKeys,
   users,
   webhooks,
-} from "@origin/db";
-import { compareBranches, createBareRepository, createBranch, getRefSha, mergeBranches } from "@origin/git";
+} from "@northstar/db";
+import { compareBranches, createBareRepository, createBranch, getRefSha, mergeBranches } from "@northstar/git";
 import { createSession, destroySession, requireUser } from "@/lib/auth";
 import { repositoryRoot } from "@/lib/repository";
 
@@ -196,7 +196,7 @@ export async function importGitHubAction(formData: FormData) {
   } catch {
     fail("/import", "A repository with that name already exists in this workspace.");
   }
-  const encryptedToken = token ? await encryptSecret(token, requiredEnv("ORIGIN_ENCRYPTION_KEY")) : undefined;
+  const encryptedToken = token ? await encryptSecret(token, requiredEnv("NORTHSTAR_ENCRYPTION_KEY")) : undefined;
   await getDb().insert(jobs).values({
     type: "import-github",
     payload: { repositoryId: repository!.id, sourceUrl, token: encryptedToken },
@@ -400,7 +400,7 @@ export async function createWebhookAction(formData: FormData) {
   if (!new Set(["http:", "https:"]).has(url.protocol)) throw new Error("Webhook URL must use HTTP or HTTPS");
   const secret = value(formData, "secret") || randomBytes(24).toString("base64url");
   const events = formData.getAll("events").map(String).filter(Boolean);
-  await getDb().insert(webhooks).values({ repositoryId, url: url.toString(), secretEncrypted: await encryptSecret(secret, requiredEnv("ORIGIN_ENCRYPTION_KEY")), events: events.length ? events : ["push"] });
+  await getDb().insert(webhooks).values({ repositoryId, url: url.toString(), secretEncrypted: await encryptSecret(secret, requiredEnv("NORTHSTAR_ENCRYPTION_KEY")), events: events.length ? events : ["push"] });
   revalidatePath(`/${row.organization.slug}/${row.repository.slug}/settings/hooks`);
 }
 
@@ -427,7 +427,7 @@ export async function createRunnerAction(_state: RunnerActionState, formData: Fo
   await requireOrganization(user.id, organizationId);
   const name = value(formData, "name");
   if (name.length < 2) return { error: "Give the runner a recognizable name." };
-  const token = `orr_${randomBytes(32).toString("base64url")}`;
+  const token = `nsr_${randomBytes(32).toString("base64url")}`;
   await getDb().insert(runners).values({ organizationId, name, tokenHash: createHash("sha256").update(token).digest("hex"), labels: value(formData, "labels").split(",").map((item) => item.trim()).filter(Boolean) });
   return { token };
 }
@@ -457,7 +457,7 @@ export async function createAccessTokenAction(_state: TokenActionState, formData
   const user = await requireUser();
   const name = value(formData, "name");
   if (name.length < 2) return { error: "Give the token a recognizable name." };
-  const token = `org_${randomBytes(32).toString("base64url")}`;
+  const token = `nst_${randomBytes(32).toString("base64url")}`;
   await getDb().insert(accessTokens).values({
     userId: user.id,
     name,
@@ -564,7 +564,7 @@ export async function configureSsoAction(formData: FormData) {
     ssoEnabled: enabled,
     ssoIssuer: issuer || null,
     ssoClientId: clientId || null,
-    ...(clientSecret ? { ssoClientSecretEncrypted: await encryptSecret(clientSecret, requiredEnv("ORIGIN_ENCRYPTION_KEY")) } : {}),
+    ...(clientSecret ? { ssoClientSecretEncrypted: await encryptSecret(clientSecret, requiredEnv("NORTHSTAR_ENCRYPTION_KEY")) } : {}),
     updatedAt: new Date(),
   };
   await getDb().insert(organizationSettings).values({ organizationId, ...set }).onConflictDoUpdate({ target: organizationSettings.organizationId, set });

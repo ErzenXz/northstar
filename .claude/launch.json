@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "origin-web",
+      "name": "northstar-web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@origin/web", "dev"],
+      "runtimeArgs": ["--filter", "@northstar/web", "dev"],
       "port": 3000
     }
   ]

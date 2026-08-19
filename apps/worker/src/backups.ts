@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { backups, getDb, jobs, repositories } from "@origin/db";
-import { bundleRepository, verifyBundleRestore } from "@origin/git";
+import { backups, getDb, jobs, repositories } from "@northstar/db";
+import { bundleRepository, verifyBundleRestore } from "@northstar/git";
 import { eq } from "drizzle-orm";
 import { ensureOrganizationSettings } from "./billing";
 

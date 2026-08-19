@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { getDb, organizationSettings, organizations } from "@origin/db";
-import { absoluteUrl } from "@origin/core";
+import { getDb, organizationSettings, organizations } from "@northstar/db";
+import { absoluteUrl } from "@northstar/core";
 
 async function discover(issuer: string) {
   const response = await fetch(new URL("/.well-known/openid-configuration", issuer), { signal: AbortSignal.timeout(10_000) });
@@ -27,9 +27,9 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
   const nonce = randomBytes(24).toString("base64url");
   const cookieStore = await cookies();
   const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", maxAge: 600, path: "/" };
-  cookieStore.set("origin_oidc_state", state, cookieOptions);
-  cookieStore.set("origin_oidc_nonce", nonce, cookieOptions);
-  cookieStore.set("origin_oidc_org", row.organization.id, cookieOptions);
+  cookieStore.set("northstar_oidc_state", state, cookieOptions);
+  cookieStore.set("northstar_oidc_nonce", nonce, cookieOptions);
+  cookieStore.set("northstar_oidc_org", row.organization.id, cookieOptions);
   const authorize = new URL(discovery.authorization_endpoint);
   authorize.searchParams.set("response_type", "code");
   authorize.searchParams.set("client_id", row.settings.ssoClientId);

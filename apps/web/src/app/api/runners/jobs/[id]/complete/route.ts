@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { getDb, runnerJobs, runners } from "@origin/db";
+import { getDb, runnerJobs, runners } from "@northstar/db";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer orr_")) return Response.json({ error: "Runner authentication failed" }, { status: 401 });
+  if (!authorization?.startsWith("Bearer nsr_")) return Response.json({ error: "Runner authentication failed" }, { status: 401 });
   const hash = createHash("sha256").update(authorization.slice(7).trim()).digest("hex");
   const [runner] = await getDb().select().from(runners).where(eq(runners.tokenHash, hash)).limit(1);
   if (!runner) return Response.json({ error: "Runner authentication failed" }, { status: 401 });

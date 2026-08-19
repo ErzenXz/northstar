@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Bot, BrainCircuit, ChevronRight, CircleDot, File, FileCode2, Folder, GitBranch, GitCommitHorizontal, GitPullRequest, Radio, Sparkles } from "lucide-react";
-import { listCommits, listTree, readReadme, repositoryExists } from "@origin/git";
+import { listCommits, listTree, readReadme, repositoryExists } from "@northstar/git";
 import { RepoShell } from "@/components/repo-shell";
 import { CloneBox } from "@/components/clone-box";
 import { getRepository, getRepositoryOverview } from "@/lib/data";
@@ -40,6 +40,6 @@ export default async function RepositoryPage({ params, searchParams }: { params:
       <section className="side-card panel"><div className="side-title"><Radio size={16} /><b>Activity</b><span>live</span></div>{overview.events.length ? <div className="activity-list">{overview.events.slice(0, 6).map((event) => <div key={event.id}><span className={`event-dot ${event.actorType}`} /> <p><b>{event.actorName}</b>{event.title}<small>{event.createdAt.toLocaleString()}</small></p></div>)}</div> : <p className="muted side-copy">Human and agent work will appear on this shared timeline.</p>}</section>
       <section className="side-card panel"><div className="side-title"><BrainCircuit size={16} /><b>Repository brain</b></div><p className="side-copy">Architecture, conventions, risks, and decisions grounded in this source.</p><Link href={`${base}/brain`}>Open project memory <ChevronRight size={15} /></Link></section>
       <div className="side-stats"><Link href={`${base}/issues`}><CircleDot /><b>{overview.openIssues.length}</b><span>Open issues</span></Link><Link href={`${base}/pulls`}><GitPullRequest /><b>{overview.openPulls.length}</b><span>Open changes</span></Link><Link href={`${base}/agents`}><Bot /><b>{overview.runs.length}</b><span>Agent runs</span></Link></div>
-    </aside></div> : <section className="empty-repository panel"><div className="empty-icon"><GitCommitHorizontal /></div><h2>Make the first commit</h2><p>Origin is ready to receive source over Git. Create an access token, then push your existing project.</p><pre><code>{`git remote add origin ${gitCloneUrl(owner, repo)}\ngit branch -M ${repository.defaultBranch}\ngit push -u origin ${repository.defaultBranch}`}</code></pre><div><Link href="/settings/tokens" className="button button-primary">Create access token</Link><Link href="/import" className="button button-quiet"><Sparkles size={16} /> Import instead</Link></div></section>}
+    </aside></div> : <section className="empty-repository panel"><div className="empty-icon"><GitCommitHorizontal /></div><h2>Make the first commit</h2><p>Northstar is ready to receive source over Git. Create an access token, then push your existing project.</p><pre><code>{`git remote add origin ${gitCloneUrl(owner, repo)}\ngit branch -M ${repository.defaultBranch}\ngit push -u origin ${repository.defaultBranch}`}</code></pre><div><Link href="/settings/tokens" className="button button-primary">Create access token</Link><Link href="/import" className="button button-quiet"><Sparkles size={16} /> Import instead</Link></div></section>}
   </RepoShell>;
 }

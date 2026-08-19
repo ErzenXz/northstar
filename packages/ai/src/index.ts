@@ -78,7 +78,7 @@ export async function planRepositoryObjective(input: {
   const { output, usage } = await generateText({
     model: model(),
     output: Output.object({ schema: planSchema }),
-    system: "You are Origin's repository planner. Produce a concise, evidence-oriented implementation plan. Never claim to have inspected files that are absent from the supplied context. Prefer user-observable acceptance criteria over internal implementation trivia.",
+    system: "You are Northstar's repository planner. Produce a concise, evidence-oriented implementation plan. Never claim to have inspected files that are absent from the supplied context. Prefer user-observable acceptance criteria over internal implementation trivia.",
     prompt: [
       `Repository: ${input.repositoryName}`,
       `Objective: ${input.objective}`,
@@ -102,7 +102,7 @@ export async function implementObjectiveChange(input: {
     const record = [
       `# Objective record: ${input.objective}`,
       "",
-      "Origin executed this run without an AI provider key, so the sandbox recorded",
+      "Northstar executed this run without an AI provider key, so the sandbox recorded",
       "the approved objective and plan as a reviewable in-repository work order",
       "instead of generating code. Configure AI_GATEWAY_API_KEY for implemented changes.",
       "",
@@ -117,7 +117,7 @@ export async function implementObjectiveChange(input: {
       change: {
         summary: "Recorded the approved objective as an in-repository work order (deterministic no-key fallback).",
         commitMessage: `Record objective: ${input.objective.slice(0, 80)}`,
-        files: [{ path: `.origin/objectives/${slug}.md`, action: "write", content: record, reason: "Deterministic fallback keeps the approved objective auditable inside the repository." }],
+        files: [{ path: `.northstar/objectives/${slug}.md`, action: "write", content: record, reason: "Deterministic fallback keeps the approved objective auditable inside the repository." }],
       },
       usage: { totalTokens: 0 },
     };
@@ -195,7 +195,7 @@ export async function buildRepositoryBrain(input: {
         purpose: input.readme?.split("\n").find((line) => line.trim() && !line.startsWith("#"))?.trim() ?? `${input.repositoryName} has not been analyzed yet. Add an AI Gateway key to build its living repository brain.`,
         architecture: input.files.slice(0, 5).map((file) => ({ title: file.path, detail: "Detected as a project-defining file.", sourcePath: file.path })),
         conventions: [{ title: "Evidence before merge", detail: "Attach tests and user-visible proof to every agent-authored change.", sourcePath: null }],
-        risks: [{ title: "AI provider not configured", detail: "Origin is showing a deterministic local summary. Configure AI_GATEWAY_API_KEY for semantic analysis.", sourcePath: null }],
+        risks: [{ title: "AI provider not configured", detail: "Northstar is showing a deterministic local summary. Configure AI_GATEWAY_API_KEY for semantic analysis.", sourcePath: null }],
         suggestedQuestions: ["Where does the application start?", "How is this project tested?", "Which areas carry the most change risk?"],
       },
       usage: { totalTokens: 0 },

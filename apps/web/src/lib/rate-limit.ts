@@ -10,7 +10,7 @@ export async function clientAddress() {
 }
 
 /**
- * In-process fixed-window limiter for the community edition. Origin Cloud
+ * In-process fixed-window limiter for the community edition. Northstar Cloud
  * replaces this seam with a shared limiter in front of every region.
  */
 export async function enforceRateLimit(action: string, limit: number, windowMs: number) {

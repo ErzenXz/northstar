@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CircleCheck, CircleDot, Flag, MessageSquare, Plus, Tag, X } from "lucide-react";
 import { eq } from "drizzle-orm";
-import { getDb, labels } from "@origin/db";
+import { getDb, labels } from "@northstar/db";
 import { createIssueAction, createLabelAction } from "@/app/actions";
 import { EmptyState } from "@/components/empty-state";
 import { Popover } from "@/components/popover";

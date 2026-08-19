@@ -1,0 +1,2 @@
+ALTER TABLE "agent_reviews" ALTER COLUMN "reviewer" SET DEFAULT 'northstar-review-agent';--> statement-breakpoint
+ALTER TABLE "policy_gates" ALTER COLUMN "blocked_paths" SET DEFAULT '[".git/",".northstar/policies"]'::jsonb;

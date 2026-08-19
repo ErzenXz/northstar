@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
-import { absoluteUrl, decryptSecret, requiredEnv, slugify } from "@origin/core";
-import { auditEvents, getDb, organizationMembers, organizationSettings, organizations, users } from "@origin/db";
+import { absoluteUrl, decryptSecret, requiredEnv, slugify } from "@northstar/core";
+import { auditEvents, getDb, organizationMembers, organizationSettings, organizations, users } from "@northstar/db";
 import { randomBytes } from "node:crypto";
 import { hash } from "argon2";
 import { createSession } from "@/lib/auth";
@@ -22,10 +22,10 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const cookieStore = await cookies();
-  const expectedState = cookieStore.get("origin_oidc_state")?.value;
-  const expectedNonce = cookieStore.get("origin_oidc_nonce")?.value;
-  const organizationId = cookieStore.get("origin_oidc_org")?.value;
-  for (const name of ["origin_oidc_state", "origin_oidc_nonce", "origin_oidc_org"]) cookieStore.delete(name);
+  const expectedState = cookieStore.get("northstar_oidc_state")?.value;
+  const expectedNonce = cookieStore.get("northstar_oidc_nonce")?.value;
+  const organizationId = cookieStore.get("northstar_oidc_org")?.value;
+  for (const name of ["northstar_oidc_state", "northstar_oidc_nonce", "northstar_oidc_org"]) cookieStore.delete(name);
   if (!code || !state || !expectedState || state !== expectedState || !organizationId) return failure("The sign-on response could not be verified. Try again.");
 
   const [row] = await getDb()
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   const discovery = await fetch(new URL("/.well-known/openid-configuration", row.settings.ssoIssuer), { signal: AbortSignal.timeout(10_000) });
   if (!discovery.ok) return failure("The identity provider is unreachable.");
   const { token_endpoint: tokenEndpoint, issuer } = await discovery.json() as { token_endpoint: string; issuer?: string };
-  const clientSecret = await decryptSecret(row.settings.ssoClientSecretEncrypted, requiredEnv("ORIGIN_ENCRYPTION_KEY"));
+  const clientSecret = await decryptSecret(row.settings.ssoClientSecretEncrypted, requiredEnv("NORTHSTAR_ENCRYPTION_KEY"));
   const tokenResponse = await fetch(tokenEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

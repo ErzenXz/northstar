@@ -7,7 +7,7 @@ import { Popover } from "@/components/popover";
 import { RepoShell } from "@/components/repo-shell";
 import { getRepository, getRepositoryPulls } from "@/lib/data";
 import { repositoryRoot } from "@/lib/repository";
-import { listBranches } from "@origin/git";
+import { listBranches } from "@northstar/git";
 
 export const metadata = { title: "Changes" };
 

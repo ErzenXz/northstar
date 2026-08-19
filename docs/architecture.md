@@ -1,6 +1,6 @@
 # Architecture
 
-Origin is separated by operational responsibility rather than by pricing tier.
+Northstar is separated by operational responsibility rather than by pricing tier.
 The community edition is a complete forge. Hosted-only code may operate the
 forge, but must not become a hidden dependency of the core product.
 
@@ -47,7 +47,7 @@ adapter without changing product routes.
 
 ## Edition rule
 
-`ORIGIN_EDITION=community|cloud` selects operational integrations. It cannot
+`NORTHSTAR_EDITION=community|cloud` selects operational integrations. It cannot
 disable source hosting, importing, issues, change review, repository memory, or
 agent planning. Cloud modules may provide managed sandboxes, backups, billing,
 enterprise identity, and fleet operations.

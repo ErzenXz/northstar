@@ -33,10 +33,10 @@ importers:
 
   apps/git:
     dependencies:
-      '@origin/db':
+      '@northstar/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@origin/git':
+      '@northstar/git':
         specifier: workspace:*
         version: link:../../packages/git
       dotenv:
@@ -67,10 +67,10 @@ importers:
 
   apps/ssh:
     dependencies:
-      '@origin/db':
+      '@northstar/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@origin/git':
+      '@northstar/git':
         specifier: workspace:*
         version: link:../../packages/git
       dotenv:
@@ -104,13 +104,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@origin/core':
+      '@northstar/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@origin/db':
+      '@northstar/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@origin/git':
+      '@northstar/git':
         specifier: workspace:*
         version: link:../../packages/git
       argon2:
@@ -162,21 +162,21 @@ importers:
 
   apps/worker:
     dependencies:
+      '@northstar/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@northstar/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@northstar/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@northstar/git':
+        specifier: workspace:*
+        version: link:../../packages/git
       '@octokit/rest':
         specifier: 22.0.0
         version: 22.0.0
-      '@origin/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
-      '@origin/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@origin/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@origin/git':
-        specifier: workspace:*
-        version: link:../../packages/git
       dotenv:
         specifier: 17.2.2
         version: 17.2.2
@@ -239,10 +239,10 @@ importers:
 
   packages/db:
     dependencies:
-      '@origin/core':
+      '@northstar/core':
         specifier: workspace:*
         version: link:../core
-      '@origin/git':
+      '@northstar/git':
         specifier: workspace:*
         version: link:../git
       argon2:
@@ -279,7 +279,7 @@ importers:
 
   packages/git:
     dependencies:
-      '@origin/core':
+      '@northstar/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:

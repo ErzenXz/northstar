@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { Fingerprint, KeyRound, LockKeyhole } from "lucide-react";
-import { deployKeys, getDb } from "@origin/db";
+import { deployKeys, getDb } from "@northstar/db";
 import { addDeployKeyAction } from "@/app/actions";
 import { RepoShell } from "@/components/repo-shell";
 import { getRepositoryForMember } from "@/lib/data";

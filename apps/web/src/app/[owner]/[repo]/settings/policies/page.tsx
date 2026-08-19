@@ -25,7 +25,7 @@ export default async function PoliciesPage({ params }: { params: Promise<{ owner
         <label className="check-label"><input type="checkbox" name="runTests" defaultChecked={gates?.runTests ?? true} /> Run the repository test command in the sandbox</label>
         <label className="check-label"><input type="checkbox" name="allowNetwork" defaultChecked={gates?.allowNetwork ?? false} /> Allow sandbox network access <span>Off by default; the isolation level is recorded as evidence</span></label>
         <label>Maximum changed files per agent change<input type="number" name="maxChangedFiles" min={1} max={500} defaultValue={gates?.maxChangedFiles ?? 25} /></label>
-        <label>Blocked write paths <span>One prefix per line; agents can never write here</span><textarea name="blockedPaths" rows={4} defaultValue={(gates?.blockedPaths ?? [".git/", ".origin/policies"]).join("\n")} /></label>
+        <label>Blocked write paths <span>One prefix per line; agents can never write here</span><textarea name="blockedPaths" rows={4} defaultValue={(gates?.blockedPaths ?? [".git/", ".northstar/policies"]).join("\n")} /></label>
         <button className="button button-primary"><ShieldCheck size={16} /> Save policy gates</button>
       </form>
     </section>

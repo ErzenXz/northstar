@@ -26,7 +26,7 @@ import {
   repositoryMemories,
   usageRecords,
   users,
-} from "@origin/db";
+} from "@northstar/db";
 import { getCurrentUser } from "./auth";
 
 export async function getRepository(owner: string, repository: string) {

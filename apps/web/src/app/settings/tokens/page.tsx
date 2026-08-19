@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { KeyRound } from "lucide-react";
-import { accessTokens, getDb } from "@origin/db";
+import { accessTokens, getDb } from "@northstar/db";
 import { requireUser } from "@/lib/auth";
 import { TokenForm } from "@/components/token-form";
 

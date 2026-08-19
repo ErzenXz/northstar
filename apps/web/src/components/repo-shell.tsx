@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookOpen, Bot, BrainCircuit, CircleDot, Code2, GitBranch, GitPullRequest, Package, Radio, Settings } from "lucide-react";
 import { and, eq } from "drizzle-orm";
-import { getDb, organizationMembers, type Organization, type Repository } from "@origin/db";
+import { getDb, organizationMembers, type Organization, type Repository } from "@northstar/db";
 import { getCurrentUser } from "@/lib/auth";
 
 const tabs = [

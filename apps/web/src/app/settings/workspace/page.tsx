@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CreditCard, Download, Globe2, KeyRound, ShieldCheck } from "lucide-react";
-import { usagePeriod } from "@origin/core";
+import { usagePeriod } from "@northstar/core";
 import { configureSsoAction, updateWorkspaceSettingsAction } from "@/app/actions";
 import { ScimTokenForm } from "@/components/scim-token-form";
 import { requireUser } from "@/lib/auth";
@@ -23,7 +23,7 @@ export default async function WorkspaceSettingsPage() {
     <div className="flow-heading"><h1>Workspace controls</h1><p>Billing plan, model budgets, data region, identity, and the audit trail for this workspace.</p></div>
 
     <section className="panel settings-section">
-      <div><h2><CreditCard size={17} /> Billing &amp; budgets</h2><p>The community edition meters usage locally. Origin Cloud attaches invoicing to the same plan and budget records — capabilities are never removed from the open core.</p></div>
+      <div><h2><CreditCard size={17} /> Billing &amp; budgets</h2><p>The community edition meters usage locally. Northstar Cloud attaches invoicing to the same plan and budget records — capabilities are never removed from the open core.</p></div>
       <form action={updateWorkspaceSettingsAction} className="form-stack">
         <input type="hidden" name="organizationId" value={organization.id} />
         <div className="form-row">
@@ -56,7 +56,7 @@ export default async function WorkspaceSettingsPage() {
           <label>Client ID<input name="ssoClientId" defaultValue={settings.ssoClientId ?? ""} /></label>
           <label>Client secret <span>{settings.ssoClientSecretEncrypted ? "Stored encrypted — leave blank to keep" : "Stored encrypted at rest"}</span><input type="password" name="ssoClientSecret" autoComplete="off" /></label>
         </div>
-        <p className="field-help">Redirect URI for your identity provider: <code>{process.env.ORIGIN_BASE_URL ?? "http://localhost:3000"}/api/auth/oidc/callback</code></p>
+        <p className="field-help">Redirect URI for your identity provider: <code>{process.env.NORTHSTAR_BASE_URL ?? "http://localhost:3000"}/api/auth/oidc/callback</code></p>
         <button className="button button-primary">Save SSO configuration</button>
       </form>
     </section>

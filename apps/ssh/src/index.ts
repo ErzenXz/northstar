@@ -5,11 +5,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { and, eq } from "drizzle-orm";
 import ssh2 from "ssh2";
-import { activityEvents, deployKeys, getDb, jobs, organizationMembers, organizations, repositories, sshKeys, users } from "@origin/db";
-import { resolveRepositoryPath } from "@origin/git";
+import { activityEvents, deployKeys, getDb, jobs, organizationMembers, organizations, repositories, sshKeys, users } from "@northstar/db";
+import { resolveRepositoryPath } from "@northstar/git";
 
-const repositoryRoot = resolve(process.env.ORIGIN_REPOSITORY_ROOT ?? "../../data/repositories");
-const hostKeyPath = resolve(process.env.ORIGIN_SSH_HOST_KEY ?? "../../data/ssh/host-key.pem");
+const repositoryRoot = resolve(process.env.NORTHSTAR_REPOSITORY_ROOT ?? "../../data/repositories");
+const hostKeyPath = resolve(process.env.NORTHSTAR_SSH_HOST_KEY ?? "../../data/ssh/host-key.pem");
 
 type Actor = { type: "user"; userId: string; name: string; keyId: string } | { type: "deploy"; deployKeyId: string; name: string; keyId: string };
 type AuthenticationMatch = { actor: Actor; publicKey: string };
@@ -49,7 +49,7 @@ async function authenticate(data: Buffer): Promise<AuthenticationMatch | null> {
   return null;
 }
 
-const server = new ssh2.Server({ hostKeys: [await hostKey()], ident: "Origin-SSH_0.2" }, (client) => {
+const server = new ssh2.Server({ hostKeys: [await hostKey()], ident: "Northstar-SSH_0.2" }, (client) => {
   let actor: Actor | null = null;
   client.on("error", (error) => {
     if (!error.message.includes("no matching host key format")) console.warn("SSH client connection ended with an error.", error);
@@ -124,6 +124,6 @@ const server = new ssh2.Server({ hostKeys: [await hostKey()], ident: "Origin-SSH
   });
 });
 
-server.listen(Number(process.env.ORIGIN_SSH_PORT ?? 2222), process.env.ORIGIN_SSH_HOST ?? "0.0.0.0", () => {
-  console.log(`Origin SSH is ready on port ${process.env.ORIGIN_SSH_PORT ?? 2222}.`);
+server.listen(Number(process.env.NORTHSTAR_SSH_PORT ?? 2222), process.env.NORTHSTAR_SSH_HOST ?? "0.0.0.0", () => {
+  console.log(`Northstar SSH is ready on port ${process.env.NORTHSTAR_SSH_PORT ?? 2222}.`);
 });

@@ -80,6 +80,6 @@ export default async function AgentsPage({ params }: { params: Promise<{ owner: 
           </div>
         </div>
       </article>)}
-    </section> : <EmptyState icon={<Play />} title="No agent objectives yet" detail="Describe a useful outcome above. Origin will inspect this repository and prepare a reviewable plan before anything executes." />}
+    </section> : <EmptyState icon={<Play />} title="No agent objectives yet" detail="Describe a useful outcome above. Northstar will inspect this repository and prepare a reviewable plan before anything executes." />}
   </RepoShell>;
 }

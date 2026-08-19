@@ -1,13 +1,13 @@
-# Origin
+# Northstar
 
 **The open software forge for humans and agents.**
 
-Origin owns the repository, not just an integration. It combines Git hosting,
+Northstar owns the repository, not just an integration. It combines Git hosting,
 organizations, issues, change records, project memory, and evidence-oriented AI
-workflows in one self-hostable product. The community edition and Origin Cloud
+workflows in one self-hostable product. The community edition and Northstar Cloud
 run the same open core.
 
-> Status: Alpha 3. Origin owns the repository, the merge decision, and now
+> Status: Alpha 3. Northstar owns the repository, the merge decision, and now
 > verified agent work: approved objectives execute in disposable sandboxes,
 > publish evidence, pass an independent review agent, and still end at a human
 > merge — with rollback and an incident trail behind them. Workspace billing
@@ -47,8 +47,8 @@ run the same open core.
 ## Quick start
 
 ```bash
-git clone https://github.com/origin-dev/origin.git
-cd origin
+git clone https://github.com/ErzenXz/northstar.git
+cd northstar
 docker compose up --build
 ```
 
@@ -59,10 +59,10 @@ or import one from GitHub. For an immediate product tour, seed a local account:
 docker compose --profile demo run --rm seed
 ```
 
-The default local seed signs in with `demo@origin.local` and
-`origin-demo-2026`. Never use the demo credentials on a public installation.
+The default local seed signs in with `demo@northstar.local` and
+`northstar-demo-2026`. Never use the demo credentials on a public installation.
 
-To enable AI analysis, set `AI_GATEWAY_API_KEY`. Origin remains usable without
+To enable AI analysis, set `AI_GATEWAY_API_KEY`. Northstar remains usable without
 it and clearly labels deterministic fallback results.
 
 ## Development
@@ -108,8 +108,8 @@ and [Roadmap](docs/roadmap.md) before working on production deployment or agent 
 
 ## License
 
-Origin is open source under AGPL-3.0-or-later. Network deployments that modify
-Origin must make those modifications available under the same license. A future
+Northstar is open source under AGPL-3.0-or-later. Network deployments that modify
+Northstar must make those modifications available under the same license. A future
 commercial agreement may cover customers who cannot use AGPL; it must never
 remove capabilities from the community edition described in the governance
 policy.

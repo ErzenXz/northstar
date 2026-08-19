@@ -3,7 +3,7 @@ import { Header } from "@/components/header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Origin — The open AI software forge", template: "%s · Origin" },
+  title: { default: "Northstar — The open AI software forge", template: "%s · Northstar" },
   description: "Host code, move projects, and let humans and agents build together on an open forge.",
 };
 

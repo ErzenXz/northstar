@@ -1,7 +1,7 @@
 import { Archive, CircleAlert, Cpu, Database, HardDriveDownload, ListChecks, Radio, Users } from "lucide-react";
 import { desc, eq, sql } from "drizzle-orm";
-import { backups, getDb, incidents, jobs, organizations, repositories, runners, usageRecords, users } from "@origin/db";
-import { usagePeriod } from "@origin/core";
+import { backups, getDb, incidents, jobs, organizations, repositories, runners, usageRecords, users } from "@northstar/db";
+import { usagePeriod } from "@northstar/core";
 import { runBackupSweepAction } from "@/app/actions";
 import { requireAdmin } from "@/lib/auth";
 
@@ -27,7 +27,7 @@ export default async function OpsPage() {
   const failedJobs = jobRows.filter((job) => job.status === "failed");
   return <main className="ops-page shell">
     <div className="section-heading">
-      <div><h1>Operations console</h1><p>Queue health, storage replication, incidents, and abuse controls for this Origin installation.</p></div>
+      <div><h1>Operations console</h1><p>Queue health, storage replication, incidents, and abuse controls for this Northstar installation.</p></div>
       <form action={runBackupSweepAction}><button className="button button-primary"><HardDriveDownload size={15} /> Run backup sweep</button></form>
     </div>
     <section className="ops-stats">

@@ -10,7 +10,7 @@ function MarketingHome() {
         <div className="hero-copy">
           <div className="eyebrow"><span>Open source · AGPL-3.0</span><i /> Built for human + agent teams</div>
           <h1>Your codebase should<br /><em>understand the work.</em></h1>
-          <p className="hero-lede">Origin is a complete Git forge where repositories hold code, decisions, agents, and proof. Self-host it. Use our cloud. Leave whenever you want.</p>
+          <p className="hero-lede">Northstar is a complete Git forge where repositories hold code, decisions, agents, and proof. Self-host it. Use our cloud. Leave whenever you want.</p>
           <div className="hero-actions">
             <Link href="/sign-up" className="button button-primary">Start your forge <ArrowRight size={17} /></Link>
             <Link href="/import" className="button button-quiet"><CloudDownload size={17} /> Import from GitHub</Link>
@@ -19,7 +19,7 @@ function MarketingHome() {
         </div>
         <div className="pulse-card" aria-label="Example repository activity">
           <div className="pulse-top"><div><Radio size={15} /> REPOSITORY PULSE</div><span>LIVE</span></div>
-          <div className="pulse-repo"><strong>northstar / mobile</strong><small>main · 4 agents watching</small></div>
+          <div className="pulse-repo"><strong>acme / mobile</strong><small>main · 4 agents watching</small></div>
           <div className="pulse-line" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /><i /></div>
           <div className="pulse-events">
             <div><span className="event-node human">EK</span><p><b>Erzen</b> opened “Offline project sync”<small>Objective · 9:41</small></p></div>
@@ -32,7 +32,7 @@ function MarketingHome() {
 
       <section className="thesis shell">
         <p>THE THESIS</p>
-        <h2>GitHub records what happened.<br />Origin understands <em>why.</em></h2>
+        <h2>GitHub records what happened.<br />Northstar understands <em>why.</em></h2>
         <div className="thesis-grid">
           <article><Code2 /><b>Own the source</b><span>Real bare Git repositories with familiar clone, fetch, and push workflows.</span></article>
           <article><BrainCircuit /><b>Keep project memory</b><span>Architecture, decisions, conventions, and risks stay alive beside the code.</span></article>
@@ -45,11 +45,11 @@ function MarketingHome() {
         <div><p className="section-kicker">ONE PRODUCT, TWO WAYS TO RUN IT</p><h2>Your forge.<br />Your boundary.</h2></div>
         <div className="edition-grid">
           <article><span>COMMUNITY</span><h3>Run it anywhere.</h3><p>The complete open core: Git, organizations, imports, issues, changes, repository memory, and agent workflows.</p><ul><li>AGPL-3.0 source</li><li>Docker deployment</li><li>Bring any compatible model</li><li>No hosted dependency</li></ul><a href="https://github.com">View source <ArrowRight size={15} /></a></article>
-          <article className="cloud-card"><span>ORIGIN CLOUD</span><h3>We run the hard parts.</h3><p>The same forge with managed storage, isolated agent sandboxes, backups, scaling, support, and team controls.</p><ul><li>One-minute setup</li><li>Managed execution workers</li><li>Encrypted backups</li><li>Usage and policy controls</li></ul><Link href="/sign-up">Join the hosted alpha <ArrowRight size={15} /></Link></article>
+          <article className="cloud-card"><span>NORTHSTAR CLOUD</span><h3>We run the hard parts.</h3><p>The same forge with managed storage, isolated agent sandboxes, backups, scaling, support, and team controls.</p><ul><li>One-minute setup</li><li>Managed execution workers</li><li>Encrypted backups</li><li>Usage and policy controls</li></ul><Link href="/sign-up">Join the hosted alpha <ArrowRight size={15} /></Link></article>
         </div>
       </section>
 
-      <section className="final-cta"><div className="shell"><Sparkles /><h2>Move the history.<br />Keep the future open.</h2><Link href="/sign-up" className="button button-light">Create your Origin <ArrowRight size={17} /></Link></div></section>
+      <section className="final-cta"><div className="shell"><Sparkles /><h2>Move the history.<br />Keep the future open.</h2><Link href="/sign-up" className="button button-light">Create your Northstar <ArrowRight size={17} /></Link></div></section>
     </main>
   );
 }

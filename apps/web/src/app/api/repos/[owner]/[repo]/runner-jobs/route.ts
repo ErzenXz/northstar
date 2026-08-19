@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { getDb, organizationMembers, organizations, repositories, runnerJobs } from "@origin/db";
+import { getDb, organizationMembers, organizations, repositories, runnerJobs } from "@northstar/db";
 import { getAccessTokenUser } from "@/lib/auth";
 
 export async function POST(request: Request, context: { params: Promise<{ owner: string; repo: string }> }) {
   const user = await getAccessTokenUser(request);
-  if (!user) return Response.json({ error: "A valid Origin access token is required" }, { status: 401 });
+  if (!user) return Response.json({ error: "A valid Northstar access token is required" }, { status: 401 });
   const { owner, repo } = await context.params;
   const [row] = await getDb().select({ id: repositories.id }).from(repositories).innerJoin(organizations, eq(organizations.id, repositories.organizationId)).innerJoin(organizationMembers, eq(organizationMembers.organizationId, organizations.id)).where(and(eq(organizations.slug, owner), eq(repositories.slug, repo), eq(organizationMembers.userId, user.id))).limit(1);
   if (!row) return Response.json({ error: "Repository not found" }, { status: 404 });

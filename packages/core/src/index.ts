@@ -1,12 +1,12 @@
 export const product = {
-  name: "Origin",
+  name: "Northstar",
   description: "The open software forge for humans and agents.",
-  repository: "https://github.com/origin-dev/origin",
+  repository: "https://github.com/ErzenXz/northstar",
 } as const;
 
-export type OriginEdition = "community" | "cloud";
+export type NorthstarEdition = "community" | "cloud";
 
-export function getEdition(value = process.env.ORIGIN_EDITION): OriginEdition {
+export function getEdition(value = process.env.NORTHSTAR_EDITION): NorthstarEdition {
   return value === "cloud" ? "cloud" : "community";
 }
 
@@ -50,7 +50,7 @@ export function requiredEnv(name: string): string {
   return value;
 }
 
-export function absoluteUrl(path: string, base = process.env.ORIGIN_BASE_URL ?? "http://localhost:3000"): string {
+export function absoluteUrl(path: string, base = process.env.NORTHSTAR_BASE_URL ?? "http://localhost:3000"): string {
   return new URL(path, base).toString();
 }
 

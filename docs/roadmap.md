@@ -35,6 +35,6 @@
 ## Next
 
 - [ ] Screenshot and preview evidence artifacts from runner-executed jobs
-- [ ] Payment-provider integration in Origin Cloud (community edition keeps local metering)
+- [ ] Payment-provider integration in Northstar Cloud (community edition keeps local metering)
 - [ ] Cross-region backup fan-out and object-storage targets
 - [ ] Organization-level runner pools with hardware isolation

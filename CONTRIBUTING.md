@@ -1,6 +1,6 @@
 # Contributing
 
-Origin is an AGPL-3.0 open-source project. Start with an issue that states the
+Northstar is an AGPL-3.0 open-source project. Start with an issue that states the
 user problem and acceptance criteria. Pull requests should include focused
 tests and evidence of the user-visible behavior they change.
 

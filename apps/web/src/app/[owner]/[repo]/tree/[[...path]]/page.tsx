@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, File, FileCode2, Folder, GitBranch } from "lucide-react";
-import { listTree, readTextFile } from "@origin/git";
+import { listTree, readTextFile } from "@northstar/git";
 import { RepoShell } from "@/components/repo-shell";
 import { getRepository } from "@/lib/data";
 import { repositoryRoot } from "@/lib/repository";

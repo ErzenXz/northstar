@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { auditEvents, getDb, organizationMembers, organizations } from "@origin/db";
+import { auditEvents, getDb, organizationMembers, organizations } from "@northstar/db";
 import { getCurrentUser } from "@/lib/auth";
 
 function csvField(value: string) {

@@ -1,5 +1,5 @@
 {
-  "name": "@origin/ssh-server",
+  "name": "@northstar/ssh-server",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -12,8 +12,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@origin/db": "workspace:*",
-    "@origin/git": "workspace:*",
+    "@northstar/db": "workspace:*",
+    "@northstar/git": "workspace:*",
     "dotenv": "17.2.2",
     "drizzle-orm": "catalog:",
     "ssh2": "1.17.0"

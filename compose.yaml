@@ -1,16 +1,16 @@
-name: origin
+name: northstar
 
-x-origin-env: &origin-env
-  DATABASE_URL: postgresql://origin:origin@postgres:5432/origin
-  ORIGIN_REPOSITORY_ROOT: /var/lib/origin/repositories
-  ORIGIN_ASSET_ROOT: /var/lib/origin/assets
-  ORIGIN_SANDBOX_ROOT: /var/lib/origin/sandboxes
-  ORIGIN_BACKUP_ROOT: /var/lib/origin/backups
-  ORIGIN_BASE_URL: http://localhost:3000
-  ORIGIN_GIT_URL: http://localhost:4000
-  ORIGIN_SSH_URL: ssh://git@localhost:2222
-  ORIGIN_EDITION: community
-  ORIGIN_ENCRYPTION_KEY: ${ORIGIN_ENCRYPTION_KEY:-local-encryption-key-change-before-public-use}
+x-northstar-env: &northstar-env
+  DATABASE_URL: postgresql://northstar:northstar@postgres:5432/northstar
+  NORTHSTAR_REPOSITORY_ROOT: /var/lib/northstar/repositories
+  NORTHSTAR_ASSET_ROOT: /var/lib/northstar/assets
+  NORTHSTAR_SANDBOX_ROOT: /var/lib/northstar/sandboxes
+  NORTHSTAR_BACKUP_ROOT: /var/lib/northstar/backups
+  NORTHSTAR_BASE_URL: http://localhost:3000
+  NORTHSTAR_GIT_URL: http://localhost:4000
+  NORTHSTAR_SSH_URL: ssh://git@localhost:2222
+  NORTHSTAR_EDITION: community
+  NORTHSTAR_ENCRYPTION_KEY: ${NORTHSTAR_ENCRYPTION_KEY:-local-encryption-key-change-before-public-use}
   SESSION_SECRET: ${SESSION_SECRET:-local-session-secret-change-before-public-use}
   AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:-}
   AI_MODEL: ${AI_MODEL:-openai/gpt-5.6-terra}
@@ -19,15 +19,15 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: origin
-      POSTGRES_USER: origin
-      POSTGRES_PASSWORD: origin
+      POSTGRES_DB: northstar
+      POSTGRES_USER: northstar
+      POSTGRES_PASSWORD: northstar
     ports:
       - "54321:5432"
     volumes:
-      - origin-postgres:/var/lib/postgresql/data
+      - northstar-postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U origin -d origin"]
+      test: ["CMD-SHELL", "pg_isready -U northstar -d northstar"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -36,7 +36,7 @@ services:
     build:
       context: .
       target: migrate
-    environment: *origin-env
+    environment: *northstar-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,11 +45,11 @@ services:
     build:
       context: .
       target: web
-    environment: *origin-env
+    environment: *northstar-env
     ports:
       - "3000:3000"
     volumes:
-      - origin-repositories:/var/lib/origin/repositories
+      - northstar-repositories:/var/lib/northstar/repositories
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -59,13 +59,13 @@ services:
       context: .
       target: git
     environment:
-      <<: *origin-env
+      <<: *northstar-env
       GIT_PORT: 4000
       GIT_HOST: 0.0.0.0
     ports:
       - "4000:4000"
     volumes:
-      - origin-repositories:/var/lib/origin/repositories
+      - northstar-repositories:/var/lib/northstar/repositories
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -75,15 +75,15 @@ services:
       context: .
       target: ssh
     environment:
-      <<: *origin-env
-      ORIGIN_SSH_HOST: 0.0.0.0
-      ORIGIN_SSH_PORT: 2222
-      ORIGIN_SSH_HOST_KEY: /var/lib/origin/ssh/host-key.pem
+      <<: *northstar-env
+      NORTHSTAR_SSH_HOST: 0.0.0.0
+      NORTHSTAR_SSH_PORT: 2222
+      NORTHSTAR_SSH_HOST_KEY: /var/lib/northstar/ssh/host-key.pem
     ports:
       - "2222:2222"
     volumes:
-      - origin-repositories:/var/lib/origin/repositories
-      - origin-ssh:/var/lib/origin/ssh
+      - northstar-repositories:/var/lib/northstar/repositories
+      - northstar-ssh:/var/lib/northstar/ssh
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -92,11 +92,11 @@ services:
     build:
       context: .
       target: worker
-    environment: *origin-env
+    environment: *northstar-env
     volumes:
-      - origin-repositories:/var/lib/origin/repositories
-      - origin-assets:/var/lib/origin/assets
-      - origin-backups:/var/lib/origin/backups
+      - northstar-repositories:/var/lib/northstar/repositories
+      - northstar-assets:/var/lib/northstar/assets
+      - northstar-backups:/var/lib/northstar/backups
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -106,16 +106,16 @@ services:
     build:
       context: .
       target: seed
-    environment: *origin-env
+    environment: *northstar-env
     volumes:
-      - origin-repositories:/var/lib/origin/repositories
+      - northstar-repositories:/var/lib/northstar/repositories
     depends_on:
       migrate:
         condition: service_completed_successfully
 
 volumes:
-  origin-postgres:
-  origin-repositories:
-  origin-assets:
-  origin-backups:
-  origin-ssh:
+  northstar-postgres:
+  northstar-repositories:
+  northstar-assets:
+  northstar-backups:
+  northstar-ssh:

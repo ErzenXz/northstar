@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
-import { repositoryStorageKey } from "@origin/core";
+import { repositoryStorageKey } from "@northstar/core";
 
 const exec = promisify(execFile);
 const MAX_TEXT_FILE_BYTES = 1_000_000;
@@ -45,7 +45,7 @@ export async function createBareRepository(root: string, owner: string, reposito
 export async function mirrorRepository(sourceUrl: string, root: string, storageKey: string, authorizationToken?: string) {
   const destination = resolveRepositoryPath(root, storageKey);
   await mkdir(dirname(destination), { recursive: true });
-  const temporaryRoot = await mkdtemp(join(dirname(destination), ".origin-import-"));
+  const temporaryRoot = await mkdtemp(join(dirname(destination), ".northstar-import-"));
   const temporaryRepository = join(temporaryRoot, "repository.git");
   try {
     const authEnv = authorizationToken ? {
@@ -205,7 +205,7 @@ export async function createWorkspace(root: string, storageKey: string, referenc
   await validateBranchName(reference);
   const barePath = resolveRepositoryPath(root, storageKey);
   await mkdir(directory, { recursive: true });
-  const workdir = await mkdtemp(join(directory, "origin-sandbox-"));
+  const workdir = await mkdtemp(join(directory, "northstar-sandbox-"));
   await git(["clone", "--branch", reference, "--single-branch", "--no-hardlinks", "--", barePath, workdir], { maxBuffer: 25 * 1024 * 1024 });
   return workdir;
 }
@@ -272,7 +272,7 @@ export async function bundleRepository(root: string, storageKey: string, targetP
 
 export async function verifyBundleRestore(bundlePath: string, scratchDirectory: string) {
   await mkdir(scratchDirectory, { recursive: true });
-  const workdir = await mkdtemp(join(scratchDirectory, "origin-restore-"));
+  const workdir = await mkdtemp(join(scratchDirectory, "northstar-restore-"));
   try {
     await git(["bundle", "verify", bundlePath], { maxBuffer: 10 * 1024 * 1024 });
     await git(["clone", "--bare", "--", bundlePath, join(workdir, "restore.git")], { maxBuffer: 25 * 1024 * 1024 });

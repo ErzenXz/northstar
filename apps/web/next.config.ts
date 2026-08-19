@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  transpilePackages: ["@origin/core", "@origin/db", "@origin/git"],
+  transpilePackages: ["@northstar/core", "@northstar/db", "@northstar/git"],
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
   },

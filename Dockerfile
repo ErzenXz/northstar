@@ -24,10 +24,10 @@ RUN swc_source="$(readlink -f /workspace/node_modules/.pnpm/node_modules/@swc/he
   && rm -rf "$swc_target" \
   && mkdir -p "$(dirname "$swc_target")" \
   && cp -a "$swc_source" "$swc_target"
-RUN pnpm --filter @origin/git-server deploy --prod /deploy/git
-RUN pnpm --filter @origin/ssh-server deploy --prod /deploy/ssh
-RUN pnpm --filter @origin/worker deploy --prod /deploy/worker
-RUN pnpm --filter @origin/db deploy --prod /deploy/db
+RUN pnpm --filter @northstar/git-server deploy --prod /deploy/git
+RUN pnpm --filter @northstar/ssh-server deploy --prod /deploy/ssh
+RUN pnpm --filter @northstar/worker deploy --prod /deploy/worker
+RUN pnpm --filter @northstar/db deploy --prod /deploy/db
 
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production

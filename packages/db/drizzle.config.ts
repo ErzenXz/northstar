@@ -6,6 +6,6 @@ export default defineConfig({
   schema: "./src/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgresql://origin:origin@localhost:54321/origin",
+    url: process.env.DATABASE_URL ?? "postgresql://northstar:northstar@localhost:54321/northstar",
   },
 });

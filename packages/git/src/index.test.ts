@@ -22,14 +22,14 @@ describe("repository paths", () => {
   });
 
   it("compares and merges native branches", async () => {
-    const root = await mkdtemp(join(tmpdir(), "origin-git-test-"));
+    const root = await mkdtemp(join(tmpdir(), "northstar-git-test-"));
     const work = join(root, "work");
     try {
       await createBareRepository(root, "team", "app");
       await mkdir(work);
       await exec("git", ["init", "--initial-branch=main"], { cwd: work });
       await exec("git", ["config", "user.name", "Test Builder"], { cwd: work });
-      await exec("git", ["config", "user.email", "test@origin.local"], { cwd: work });
+      await exec("git", ["config", "user.email", "test@northstar.local"], { cwd: work });
       await writeFile(join(work, "README.md"), "# App\n");
       await exec("git", ["add", "."], { cwd: work });
       await exec("git", ["commit", "-m", "Start app"], { cwd: work });
@@ -42,7 +42,7 @@ describe("repository paths", () => {
       const comparison = await compareBranches(root, "team/app.git", "main", "feature/review");
       expect(comparison.files[0]?.path).toBe("README.md");
       expect(comparison.additions).toBeGreaterThan(0);
-      const merged = await mergeBranches(root, "team/app.git", "main", "feature/review", "Merge review", { name: "Origin", email: "origin@local" });
+      const merged = await mergeBranches(root, "team/app.git", "main", "feature/review", "Merge review", { name: "Northstar", email: "origin@local" });
       expect(merged.strategy).toBe("fast-forward");
     } finally { await rm(root, { recursive: true, force: true }); }
   });

@@ -15,10 +15,10 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   return (
     <main className="flow-page">
       <Link href="/" className="back-link"><ArrowLeft size={15} /> Back</Link>
-      <div className="flow-heading"><h1>Import from GitHub</h1><p>Origin mirrors the full Git history, then moves the project&apos;s issues, changes, releases, and wiki into your forge.</p></div>
+      <div className="flow-heading"><h1>Import from GitHub</h1><p>Northstar mirrors the full Git history, then moves the project&apos;s issues, changes, releases, and wiki into your forge.</p></div>
       {error && <div className="form-error">{error}</div>}
       <form action={importGitHubAction} className="flow-form panel">
-        <label>Repository URL<div className="input-with-icon"><Github size={16} /><input name="sourceUrl" type="url" required autoFocus placeholder="https://github.com/acme/northstar" /></div></label>
+        <label>Repository URL<div className="input-with-icon"><Github size={16} /><input name="sourceUrl" type="url" required autoFocus placeholder="https://github.com/acme/aurora" /></div></label>
         <div className="form-row">
           <label>Import into<select name="organizationId">{organizations.map((org) => <option value={org.id} key={org.id}>{org.slug}</option>)}</select></label>
           <label>Access token <span>Needed for private repositories</span><div className="input-with-icon"><LockKeyhole size={15} /><input name="token" type="password" autoComplete="off" placeholder="github_pat_…" /></div></label>

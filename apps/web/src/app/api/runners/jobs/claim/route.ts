@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
-import { getDb, runners } from "@origin/db";
+import { getDb, runners } from "@northstar/db";
 
 async function runnerFor(request: Request) {
   const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer orr_")) return null;
+  if (!authorization?.startsWith("Bearer nsr_")) return null;
   const hash = createHash("sha256").update(authorization.slice(7).trim()).digest("hex");
   const [runner] = await getDb().select().from(runners).where(eq(runners.tokenHash, hash)).limit(1);
   return runner ?? null;

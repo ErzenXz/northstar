@@ -1,14 +1,14 @@
 # Runner, status, and webhook protocols
 
 Alpha 2 exposes intentionally small HTTP contracts so CI systems can integrate
-without reaching into Origin's database. All JSON requests use
+without reaching into Northstar's database. All JSON requests use
 `Content-Type: application/json`.
 
 ## Access and runner credentials
 
 Create a personal access token in **Settings → Tokens**. Send it as
 `Authorization: Bearer org_…` when registering a runner, reporting a status, or
-queueing a job. Origin stores only the SHA-256 digest.
+queueing a job. Northstar stores only the SHA-256 digest.
 
 Register a runner with an organization slug, a recognizable name, and the
 labels describing its capabilities:
@@ -32,7 +32,7 @@ Complete a claimed job at `POST /api/runners/jobs/{id}/complete`:
 {"status":"completed","result":{"exitCode":0,"summary":"Checks passed"}}
 ```
 
-Use `"status":"failed"` for failed work. Origin coordinates claims and records
+Use `"status":"failed"` for failed work. Northstar coordinates claims and records
 structured results; Alpha 2 does not execute the payload or provide a sandbox.
 
 ## Commit statuses
@@ -54,11 +54,11 @@ new push requires fresh evidence and review.
 ## Webhooks
 
 Repository members create subscriptions under **Repository Settings →
-Webhooks**. Origin sends a JSON `POST` with these headers:
+Webhooks**. Northstar sends a JSON `POST` with these headers:
 
-- `X-Origin-Event`: subscribed event name
-- `X-Origin-Delivery`: unique delivery UUID
-- `X-Origin-Signature-256`: `sha256=` followed by the HMAC-SHA256 body digest
+- `X-Northstar-Event`: subscribed event name
+- `X-Northstar-Delivery`: unique delivery UUID
+- `X-Northstar-Signature-256`: `sha256=` followed by the HMAC-SHA256 body digest
 
 Verify the signature against the exact request bytes before parsing JSON.
 Deliveries have a ten-second timeout, do not follow redirects, reject URL

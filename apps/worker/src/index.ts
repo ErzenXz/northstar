@@ -4,8 +4,8 @@ import { lookup } from "node:dns/promises";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { Octokit } from "@octokit/rest";
-import { buildRepositoryBrain, planRepositoryObjective } from "@origin/ai";
-import { decryptSecret, requiredEnv } from "@origin/core";
+import { buildRepositoryBrain, planRepositoryObjective } from "@northstar/ai";
+import { decryptSecret, requiredEnv } from "@northstar/core";
 import {
   activityEvents,
   agentRuns,
@@ -27,18 +27,18 @@ import {
   webhookDeliveries,
   webhooks,
   wikiImports,
-} from "@origin/db";
-import { getDefaultBranch, listTree, mirrorRepository, readReadme, readTextFile } from "@origin/git";
+} from "@northstar/db";
+import { getDefaultBranch, listTree, mirrorRepository, readReadme, readTextFile } from "@northstar/git";
 import { and, eq, sql } from "drizzle-orm";
 import { executeAgentRun, reviewAgentRun, rollbackAgentRun } from "./agents";
 import { backupRepositories } from "./backups";
 import { assertAiBudget, chargeAiUsage } from "./billing";
 
 type ClaimedJob = { id: string; type: string; payload: Record<string, unknown>; attempts: number };
-const repositoryRoot = resolve(process.env.ORIGIN_REPOSITORY_ROOT ?? "../../data/repositories");
-const assetRoot = resolve(process.env.ORIGIN_ASSET_ROOT ?? "../../data/assets");
-const sandboxRoot = resolve(process.env.ORIGIN_SANDBOX_ROOT ?? "../../data/sandboxes");
-const backupRoot = resolve(process.env.ORIGIN_BACKUP_ROOT ?? "../../data/backups");
+const repositoryRoot = resolve(process.env.NORTHSTAR_REPOSITORY_ROOT ?? "../../data/repositories");
+const assetRoot = resolve(process.env.NORTHSTAR_ASSET_ROOT ?? "../../data/assets");
+const sandboxRoot = resolve(process.env.NORTHSTAR_SANDBOX_ROOT ?? "../../data/sandboxes");
+const backupRoot = resolve(process.env.NORTHSTAR_BACKUP_ROOT ?? "../../data/backups");
 let stopping = false;
 
 async function claimJob(): Promise<ClaimedJob | null> {
@@ -76,7 +76,7 @@ async function importGitHub(job: ClaimedJob) {
   const repositoryId = String(job.payload.repositoryId);
   const sourceUrl = String(job.payload.sourceUrl);
   const encryptedToken = typeof job.payload.token === "string" ? job.payload.token : null;
-  const token = encryptedToken ? await decryptSecret(encryptedToken, requiredEnv("ORIGIN_ENCRYPTION_KEY")) : undefined;
+  const token = encryptedToken ? await decryptSecret(encryptedToken, requiredEnv("NORTHSTAR_ENCRYPTION_KEY")) : undefined;
   const source = parseGitHubUrl(sourceUrl);
   const [repository] = await getDb().select().from(repositories).where(eq(repositories.id, repositoryId)).limit(1);
   if (!repository) throw new Error("Import target repository no longer exists");
@@ -255,7 +255,7 @@ async function importGitHub(job: ClaimedJob) {
             const safeName = basename(asset.name);
             const directory = resolve(assetRoot, repositoryId, release.tag_name.replace(/[^A-Za-z0-9._-]/g, "_"));
             await mkdir(directory, { recursive: true });
-            const response = await fetch(asset.url, { headers: { Accept: "application/octet-stream", ...(token ? { Authorization: `Bearer ${token}` } : {}), "User-Agent": "Origin-Importer" } });
+            const response = await fetch(asset.url, { headers: { Accept: "application/octet-stream", ...(token ? { Authorization: `Bearer ${token}` } : {}), "User-Agent": "Northstar-Importer" } });
             if (response.ok) {
               const data = Buffer.from(await response.arrayBuffer());
               if (data.length <= 100 * 1024 * 1024) {
@@ -328,9 +328,9 @@ async function deliverWebhookEvent(job: ClaimedJob) {
     try {
       const url = await assertPublicWebhookUrl(hook.url);
       const body = JSON.stringify({ event, repositoryId, deliveryId: delivery!.id, ...payload });
-      const secret = await decryptSecret(hook.secretEncrypted, requiredEnv("ORIGIN_ENCRYPTION_KEY"));
+      const secret = await decryptSecret(hook.secretEncrypted, requiredEnv("NORTHSTAR_ENCRYPTION_KEY"));
       const signature = `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
-      const response = await fetch(url, { method: "POST", redirect: "error", signal: AbortSignal.timeout(10_000), headers: { "Content-Type": "application/json", "User-Agent": "Origin-Hookshot/1", "X-Origin-Event": event, "X-Origin-Delivery": delivery!.id, "X-Origin-Signature-256": signature }, body });
+      const response = await fetch(url, { method: "POST", redirect: "error", signal: AbortSignal.timeout(10_000), headers: { "Content-Type": "application/json", "User-Agent": "Northstar-Hookshot/1", "X-Northstar-Event": event, "X-Northstar-Delivery": delivery!.id, "X-Northstar-Signature-256": signature }, body });
       const responseBody = (await response.text()).slice(0, 2_000);
       await getDb().update(webhookDeliveries).set({ status: response.ok ? "delivered" : "failed", responseCode: response.status, responseBody, attempts: 1, deliveredAt: new Date(), updatedAt: new Date() }).where(eq(webhookDeliveries.id, delivery!.id));
       await getDb().update(webhooks).set({ lastDeliveryAt: new Date(), updatedAt: new Date() }).where(eq(webhooks.id, hook.id));
@@ -405,7 +405,7 @@ async function planAgentRun(job: ClaimedJob) {
   await getDb().insert(activityEvents).values({
     repositoryId: repository.id,
     actorType: "agent",
-    actorName: "Origin planner",
+    actorName: "Northstar planner",
     type: "agent.plan_ready",
     title: `Planned: ${run.objective}`,
     detail: `${plan.steps.length} verified steps are ready for approval.`,
@@ -431,7 +431,7 @@ function safeError(error: unknown) {
 }
 
 async function loop() {
-  console.log("Origin worker is ready.");
+  console.log("Northstar worker is ready.");
   while (!stopping) {
     const job = await claimJob();
     if (!job) {

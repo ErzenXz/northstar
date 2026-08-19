@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Activity, CirclePlus, CloudDownload, LogOut, Settings, SlidersHorizontal } from "lucide-react";
-import { getEdition } from "@origin/core";
+import { getEdition } from "@northstar/core";
 import { getCurrentUser } from "@/lib/auth";
 import { signOutAction } from "@/app/actions";
 import { Logo } from "./logo";
@@ -25,7 +25,7 @@ export async function Header() {
                   {user.admin && <Link href="/ops" role="menuitem"><Activity size={14} /> Operations console</Link>}
                   <div className="menu-divider" />
                   <form action={signOutAction}><button role="menuitem"><LogOut size={14} /> Sign out</button></form>
-                  <div className="menu-foot">Origin · {getEdition()} edition</div>
+                  <div className="menu-foot">Northstar · {getEdition()} edition</div>
                 </div>
               </details>
             </>
